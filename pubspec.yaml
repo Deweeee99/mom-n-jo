@@ -1,0 +1,67 @@
+name: momnjo_mobile
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  http: ^1.2.2
+  shared_preferences: ^2.5.3
+  carousel_slider: ^5.1.1
+  url_launcher: ^6.3.2
+  connectivity_plus: ^5.0.2
+  intl: ^0.19.0
+  salomon_bottom_bar: ^3.3.2
+
+  cached_network_image: ^3.3.0
+  provider: ^6.1.1
+  flutter_native_splash: ^2.4.2
+
+  cupertino_icons: ^1.0.8
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
+
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/momnjo_logo.png
+    - assets/banner1.png
+    - assets/banner2.png
+    - assets/banner3.png
+    - assets/promo.png
+    - assets/darmawangsa.png
+    - assets/txt-branches.png
+    - assets/home-service.png
+    - assets/txt-recommended-service.png
+    - assets/kid.png
+    - assets/mom2be.png
+    - assets/after-labour.png
+    - assets/baby-massage.png
+    - assets/him-her.png
+    - assets/youtube.png
+    - assets/txt-video-treatment.png
+    - assets/bookbg.png
+    - assets/wa.png
+
+
+# =========================================
+#     ICON CONFIG — HARUS DI BAWAH SINI
+# =========================================
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/momnjo_logo.png"

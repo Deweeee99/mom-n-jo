@@ -1,0 +1,47 @@
+android {
+    compileSdkVersion 34  <!-- ✅ UPDATE KE VERSI TERBARU -->
+    
+    defaultConfig {
+        applicationId "com.yourcompany.momnjo_mobile"
+        minSdkVersion 21
+        targetSdkVersion 34  <!-- ✅ UPDATE KE VERSI TERBARU -->
+        versionCode 1
+        versionName "1.0.0"
+        
+        // ✅ OPTIMISASI MEMORY
+        multiDexEnabled true
+        renderscriptTargetApi 21
+        renderscriptSupportModeEnabled true
+    }
+    
+    buildTypes {
+        release {
+            // ✅ OPTIMISASI RELEASE BUILD
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            
+            // ✅ MEMORY OPTIMIZATION
+            ndk {
+                abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+            }
+        }
+        debug {
+            // ✅ OPTIMISASI DEBUG BUILD
+            ext.alwaysUpdateBuildId = false
+            multiDexEnabled true
+        }
+    }
+    
+    // ✅ MEMORY OPTIMIZATION
+    dexOptions {
+        javaMaxHeapSize "4g"
+        preDexLibraries true
+        maxProcessCount 8
+    }
+    
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
