@@ -1,9 +1,46 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
+import 'package:http/http.dart' as http;
+
+// Model untuk Voucher
+class VoucherModel {
+  final String kode;
+  final String nama;
+  final String jenisDiskon;
+  final String nilaiDiskon;
+  final int minimal;
+  final String tanggalSelesai;
+  final bool layananTertentu;
+
+  VoucherModel({
+    required this.kode,
+    required this.nama,
+    required this.jenisDiskon,
+    required this.nilaiDiskon,
+    required this.minimal,
+    required this.tanggalSelesai,
+    required this.layananTertentu,
+  });
+
+  factory VoucherModel.fromJson(Map<String, dynamic> json) {
+    return VoucherModel(
+      kode: json['kode'] as String,
+      nama: json['nama'] as String,
+      jenisDiskon: (json['jenis_diskon'] as String?) ?? 'nominal',
+      nilaiDiskon: json['nilai_diskon'] as String,
+      minimal: json['minimal'] is int
+          ? json['minimal'] as int
+          : int.tryParse(json['minimal'].toString()) ?? 0,
+      tanggalSelesai: json['selesai'] as String,
+      layananTertentu: json['layanan_tertentu'] as bool,
+    );
+  }
+}
 
 class VoucherScreen extends StatefulWidget {
-  const VoucherScreen({super.key});
+  const VoucherScreen({Key? key}) : super(key: key);
 
   @override
   State<VoucherScreen> createState() => _VoucherScreenState();
@@ -15,6 +52,9 @@ class _VoucherScreenState extends State<VoucherScreen> {
   final Color _primaryColor = const Color(0xFF9B5D4C);
   final Color _accentColor = const Color(0xFFD4B89C);
 
+  List<VoucherModel> _vouchers = [];
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -23,34 +63,89 @@ class _VoucherScreenState extends State<VoucherScreen> {
 
   Future<void> _checkLoginStatus() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-    });
+    final loggedIn = prefs.getBool('isLoggedIn') ?? false;
+    setState(() => _isLoggedIn = loggedIn);
+    if (_isLoggedIn) {
+      _fetchVouchers();
+    }
+  }
+
+  Future<void> _fetchVouchers() async {
+    setState(() => _isLoading = true);
+    final uri = Uri.parse('https://app.momnjo.com/api/voucher_api.php');
+    try {
+      final resp = await http.get(uri);
+      if (resp.statusCode == 200) {
+        final body = json.decode(resp.body) as Map<String, dynamic>;
+        final dataList = body['data'] as List;
+        setState(() {
+          _vouchers = dataList
+              .map((e) => VoucherModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+        });
+      } else {
+        debugPrint('API error: ${resp.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Fetch error: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   void _navigateToScreen(BuildContext context, int index) {
     if (index == _currentIndex) return;
-
-    final routes = [
-      '/home',
-      '/booking',
-      '/gift',
-      '/voucher',
-      '/profile',
-    ];
-
-    if (index >= 0 && index < routes.length) {
-      Navigator.pushNamed(context, routes[index]);
-    }
+    const routes = ['/home', '/booking', '/gift', '/voucher', '/profile'];
+    Navigator.pushNamed(context, routes[index]);
   }
 
-  Widget _buildVoucherCard(
-      String title, String validity, String terms, String discount) {
+  @override
+  Widget build(BuildContext context) {
+    if (!_isLoggedIn) return _buildUnauthenticatedUI();
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Voucher Saya'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : (_vouchers.isEmpty
+              ? const Center(child: Text('Tidak ada voucher tersedia'))
+              : ListView.builder(
+                  padding: const EdgeInsets.only(top: 16),
+                  itemCount: _vouchers.length,
+                  itemBuilder: (context, index) {
+                    final v = _vouchers[index];
+                    final discountLabel = v.jenisDiskon == 'persen'
+                        ? '${v.nilaiDiskon}% OFF'
+                        : 'Rp ${v.nilaiDiskon}';
+                    final branchTerm = v.layananTertentu
+                        ? 'Hanya tersedia di cabang tertentu'
+                        : 'Semua cabang';
+                    final terms =
+                        '$branchTerm • Minimum transaksi Rp ${v.minimal} • Tidak bisa digabung dengan promo lain';
+                    return _buildVoucherCard(
+                      title: v.nama,
+                      validity: v.tanggalSelesai,
+                      terms: terms,
+                      discountLabel: discountLabel,
+                    );
+                  },
+                )),
+      bottomNavigationBar: _buildBottomNavBar(),
+    );
+  }
+
+  Widget _buildVoucherCard({
+    required String title,
+    required String validity,
+    required String terms,
+    required String discountLabel,
+  }) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -91,7 +186,7 @@ class _VoucherScreenState extends State<VoucherScreen> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    '$discount% OFF',
+                    discountLabel,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -102,12 +197,12 @@ class _VoucherScreenState extends State<VoucherScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Syarat & Ketentuan:',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: Colors.grey[800],
+                color: Colors.grey,
               ),
             ),
             const SizedBox(height: 4),
@@ -164,7 +259,7 @@ class _VoucherScreenState extends State<VoucherScreen> {
                 Image.asset(
                   'assets/images/auth_required.png',
                   height: 200,
-                  errorBuilder: (context, error, stackTrace) => Icon(
+                  errorBuilder: (c, e, s) => Icon(
                     Icons.lock_person,
                     size: 150,
                     color: _primaryColor.withOpacity(0.8),
@@ -181,12 +276,9 @@ class _VoucherScreenState extends State<VoucherScreen> {
                 ),
                 const SizedBox(height: 15),
                 const Text(
-                  'Silakan login terlebih dahulu untuk melihat voucher yang tersedia',
+                  'Silakan login untuk melihat voucher',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black54,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.black54),
                 ),
                 const SizedBox(height: 30),
                 SizedBox(
@@ -220,29 +312,6 @@ class _VoucherScreenState extends State<VoucherScreen> {
     );
   }
 
-  Widget _buildAuthenticatedUI() {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Voucher Saya'),
-        backgroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.only(top: 16),
-        itemCount: 3, // Ganti dengan jumlah voucher sebenarnya
-        itemBuilder: (context, index) {
-          return _buildVoucherCard(
-            'Paket Perawatan Premium',
-            '31 Desember 2024',
-            'Berlaku untuk semua cabang • Minimum transaksi Rp 500.000 • Tidak bisa digabung dengan promo lain',
-            '20',
-          );
-        },
-      ),
-      bottomNavigationBar: _buildBottomNavBar(),
-    );
-  }
-
   Widget _buildBottomNavBar() {
     return Container(
       decoration: BoxDecoration(
@@ -251,7 +320,7 @@ class _VoucherScreenState extends State<VoucherScreen> {
             color: Colors.grey.withOpacity(0.2),
             blurRadius: 10,
             spreadRadius: 2,
-          )
+          ),
         ],
       ),
       child: SalomonBottomBar(
@@ -260,33 +329,20 @@ class _VoucherScreenState extends State<VoucherScreen> {
         selectedItemColor: _primaryColor,
         unselectedItemColor: Colors.grey,
         items: [
+          SalomonBottomBarItem(icon: Icon(Icons.home), title: Text('Home')),
           SalomonBottomBarItem(
-            icon: const Icon(Icons.home),
-            title: const Text("Home"),
-          ),
+              icon: Icon(Icons.calendar_today_outlined),
+              title: Text('Booking')),
           SalomonBottomBarItem(
-            icon: const Icon(Icons.calendar_today_outlined),
-            title: const Text("Booking"),
-          ),
+              icon: Icon(Icons.card_giftcard_outlined), title: Text('Gift')),
+          //
           SalomonBottomBarItem(
-            icon: const Icon(Icons.card_giftcard_outlined),
-            title: const Text("Gift"),
-          ),
+              icon: Icon(Icons.confirmation_number_outlined),
+              title: Text('Voucher')),
           SalomonBottomBarItem(
-            icon: const Icon(Icons.confirmation_number_outlined),
-            title: const Text("Voucher"),
-          ),
-          SalomonBottomBarItem(
-            icon: const Icon(Icons.person_outline),
-            title: const Text("Profile"),
-          ),
+              icon: Icon(Icons.person_outline), title: Text('Profile')),
         ],
       ),
     );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _isLoggedIn ? _buildAuthenticatedUI() : _buildUnauthenticatedUI();
   }
 }

@@ -1,47 +1,43 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
 android {
-    compileSdkVersion 34  <!-- ✅ UPDATE KE VERSI TERBARU -->
-    
-    defaultConfig {
-        applicationId "com.yourcompany.momnjo_mobile"
-        minSdkVersion 21
-        targetSdkVersion 34  <!-- ✅ UPDATE KE VERSI TERBARU -->
-        versionCode 1
-        versionName "1.0.0"
-        
-        // ✅ OPTIMISASI MEMORY
-        multiDexEnabled true
-        renderscriptTargetApi 21
-        renderscriptSupportModeEnabled true
+    // Tambahkan namespace agar sesuai dengan aturan AGP terbaru
+    namespace = "com.example.momnjo_mobile"
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion = flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
-    
+
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+
+    defaultConfig {
+        applicationId = "com.example.momnjo_mobile"
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+    }
+
     buildTypes {
         release {
-            // ✅ OPTIMISASI RELEASE BUILD
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            
-            // ✅ MEMORY OPTIMIZATION
-            ndk {
-                abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64'
-            }
-        }
-        debug {
-            // ✅ OPTIMISASI DEBUG BUILD
-            ext.alwaysUpdateBuildId = false
-            multiDexEnabled true
+            // Gunakan signingConfigs.debug untuk testing; sesuaikan jika sudah punya signing release
+            signingConfig = signingConfigs.debug
+            minifyEnabled false
+            shrinkResources false
         }
     }
-    
-    // ✅ MEMORY OPTIMIZATION
-    dexOptions {
-        javaMaxHeapSize "4g"
-        preDexLibraries true
-        maxProcessCount 8
-    }
-    
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
+}
+
+flutter {
+    source = "../.."
 }

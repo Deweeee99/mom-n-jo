@@ -137,8 +137,9 @@ class _GiftScreenState extends State<GiftScreen> {
   }
 
   Widget _buildAuthenticatedUI() {
+    // Hanya 1 tab (Purchase) sekarang
     return DefaultTabController(
-      length: 3,
+      length: 1,
       child: Scaffold(
         appBar: AppBar(
           elevation: 0,
@@ -168,8 +169,6 @@ class _GiftScreenState extends State<GiftScreen> {
                   indicatorColor: _primaryColor,
                   tabs: const [
                     Tab(text: 'Purchase'),
-                    Tab(text: 'Redeem'),
-                    Tab(text: 'History'),
                   ],
                 ),
               ],
@@ -179,8 +178,6 @@ class _GiftScreenState extends State<GiftScreen> {
         body: const TabBarView(
           children: [
             _PurchaseTab(),
-            _RedeemTab(),
-            _HistoryTab(),
           ],
         ),
         bottomNavigationBar: _buildBottomNavBar(),
@@ -236,7 +233,7 @@ class _GiftScreenState extends State<GiftScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Info Member'),
         content: const Text(
-          'Fitur ini memungkinkan Anda untuk melihat riwayat pembelian, menukarkan kode hadiah, dan melihat histori transaksi.',
+          'Fitur ini memungkinkan Anda untuk melihat riwayat pembelian dan informasi terkait member.',
         ),
         actions: [
           TextButton(
@@ -260,113 +257,5 @@ class _PurchaseTab extends StatelessWidget {
         style: TextStyle(color: Colors.grey),
       ),
     );
-  }
-}
-
-class _HistoryTab extends StatelessWidget {
-  const _HistoryTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'Belum ada riwayat transaksi',
-        style: TextStyle(color: Colors.grey),
-      ),
-    );
-  }
-}
-
-class _RedeemTab extends StatefulWidget {
-  const _RedeemTab();
-
-  @override
-  State<_RedeemTab> createState() => __RedeemTabState();
-}
-
-class __RedeemTabState extends State<_RedeemTab> {
-  final _codeController = TextEditingController();
-  final Color _primaryColor = const Color(0xFF9B5D4C);
-
-  @override
-  void dispose() {
-    _codeController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Tukarkan Kode Hadiah',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: _primaryColor,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 30),
-          TextField(
-            controller: _codeController,
-            decoration: InputDecoration(
-              labelText: 'Masukkan Kode',
-              prefixIcon: Icon(Icons.card_giftcard, color: _primaryColor),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: _primaryColor),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: _primaryColor, width: 2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 25),
-          ElevatedButton(
-            onPressed: _redeemCode,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _primaryColor,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              'Tukarkan Sekarang',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            '*Kode hadiah bisa didapatkan dari berbagai promo yang tersedia',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-              fontStyle: FontStyle.italic,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _redeemCode() {
-    if (_codeController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Harap masukkan kode terlebih dahulu')),
-      );
-      return;
-    }
-    // Implement redeem logic here
   }
 }

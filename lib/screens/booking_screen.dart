@@ -1,6 +1,146 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
+
+/// ===================
+/// HELPERS & WIDGET LOADING
+/// ===================
+
+/// Fungsi untuk menampilkan loading animation sebelum navigasi.
+void navigateWithLoading(
+  BuildContext context,
+  String routeName, {
+  Object? arguments,
+  bool replace = false,
+  Duration delay = const Duration(milliseconds: 300),
+}) {
+  // Tampilkan dialog loading
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => const LoadingDialog(),
+  );
+
+  // Setelah delay, hapus dialog dan lakukan navigasi.
+  Future.delayed(delay, () {
+    Navigator.pop(context); // Hapus loading dialog
+    if (replace) {
+      Navigator.pushReplacementNamed(context, routeName, arguments: arguments);
+    } else {
+      Navigator.pushNamed(context, routeName, arguments: arguments);
+    }
+  });
+}
+
+/// Widget dialog yang menampilkan animasi loading hourglass.
+class LoadingDialog extends StatelessWidget {
+  const LoadingDialog({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Menggunakan Center agar loading berada di tengah layar.
+    return Center(
+      child: HourglassLoading(),
+    );
+  }
+}
+
+/// Widget custom untuk menampilkan animasi loading hourglass.
+class HourglassLoading extends StatefulWidget {
+  const HourglassLoading({Key? key}) : super(key: key);
+
+  @override
+  _HourglassLoadingState createState() => _HourglassLoadingState();
+}
+
+class _HourglassLoadingState extends State<HourglassLoading>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  // Animasi rotasi dari 0 hingga 180 derajat (0.0 - 0.5 putaran, karena 1.0 = 360°)
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+    _animation = Tween<double>(begin: 0.0, end: 0.5).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 130,
+      height: 130,
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 71, 60, 60),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: RotationTransition(
+          turns: _animation,
+          child: Container(
+            width: 50,
+            height: 70,
+            // Gambar hourglass sederhana dengan CustomPaint
+            child: CustomPaint(
+              painter: HourglassPainter(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// CustomPainter untuk menggambar bentuk hourglass sederhana.
+class HourglassPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.grey.shade400
+      ..style = PaintingStyle.fill;
+
+    // Gambar bagian atas hourglass
+    Path topPath = Path();
+    topPath.moveTo(0, 0);
+    topPath.quadraticBezierTo(size.width / 2, size.height * 0.5, size.width, 0);
+    topPath.lineTo(size.width, size.height * 0.5);
+    topPath.quadraticBezierTo(
+        size.width / 2, size.height * 0.25, 0, size.height * 0.5);
+    topPath.close();
+    canvas.drawPath(topPath, paint);
+
+    // Gambar bagian bawah hourglass
+    Path bottomPath = Path();
+    bottomPath.moveTo(0, size.height * 0.5);
+    bottomPath.quadraticBezierTo(
+        size.width / 2, size.height * 0.75, size.width, size.height * 0.5);
+    bottomPath.lineTo(size.width, size.height);
+    bottomPath.quadraticBezierTo(
+        size.width / 2, size.height * 0.5, 0, size.height);
+    bottomPath.close();
+    canvas.drawPath(bottomPath, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// ===================
+/// BOOKING SCREEN
+/// ===================
 
 class BookingScreen extends StatefulWidget {
   const BookingScreen({super.key});
@@ -12,6 +152,7 @@ class BookingScreen extends StatefulWidget {
 class _BookingScreenState extends State<BookingScreen> {
   String? _idCustomer;
   bool _isLoggedIn = false;
+  // Setelah menghapus item Booking dari bottom nav, index Gift = 1
   final int _currentIndex = 1;
   final Color _primaryColor = const Color(0xFF9B5D4C);
   final Color _accentColor = const Color(0xFFD4B89C);
@@ -30,9 +171,11 @@ class _BookingScreenState extends State<BookingScreen> {
     });
   }
 
+  /// Navigasi bottom bar menggunakan loading animation.
   void _navigateToScreen(BuildContext context, int index) {
     if (index == _currentIndex) return;
 
+    // Routes disesuaikan tanpa '/booking'
     final routes = [
       '/home',
       '/booking',
@@ -42,7 +185,7 @@ class _BookingScreenState extends State<BookingScreen> {
     ];
 
     if (index >= 0 && index < routes.length) {
-      Navigator.pushNamed(context, routes[index]);
+      navigateWithLoading(context, routes[index]);
     }
   }
 
@@ -98,7 +241,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () => Navigator.pushNamed(context, '/login'),
+                    onPressed: () => navigateWithLoading(context, '/login'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _primaryColor,
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -200,16 +343,12 @@ class _BookingScreenState extends State<BookingScreen> {
                 ),
               ),
               const SizedBox(height: 30),
-              _buildActionButton(
-                text: 'Booking Sekarang',
-                icon: Icons.add_circle_outline,
-                onPressed: () => _navigateToBookingForm(),
-              ),
+              // Tombol "Booking Sekarang" dihilangkan sesuai permintaan
               const SizedBox(height: 15),
               _buildActionButton(
                 text: 'Lihat History',
                 icon: Icons.history,
-                onPressed: () => _navigateToHistory(),
+                onPressed: _navigateToHistory,
                 isPrimary: false,
               ),
             ],
@@ -273,6 +412,7 @@ class _BookingScreenState extends State<BookingScreen> {
             icon: const Icon(Icons.home),
             title: const Text("Home"),
           ),
+          // Booking item dihapus
           SalomonBottomBarItem(
             icon: const Icon(Icons.calendar_today_outlined),
             title: const Text("Booking"),
@@ -294,19 +434,8 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
-  void _navigateToBookingForm() {
-    Navigator.pushNamed(
-      context,
-      '/Tambah',
-      arguments: _idCustomer,
-    );
-  }
-
+  /// Navigasi ke history booking menggunakan loading animation.
   void _navigateToHistory() {
-    Navigator.pushNamed(
-      context,
-      '/History',
-      arguments: _idCustomer,
-    );
+    Navigator.pushNamed(context, '/history', arguments: _idCustomer);
   }
 }
