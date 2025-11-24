@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   image_picker: ^0.8.7+3
+  #connectivity_plus: ^5.0.2
   http: ^0.13.3
   shared_preferences: ^2.0.6
   carousel_slider: ^5.0.0
