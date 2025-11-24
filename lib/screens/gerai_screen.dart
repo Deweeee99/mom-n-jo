@@ -3,15 +3,41 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class GeraiScreen extends StatelessWidget {
   const GeraiScreen({super.key});
 
+  /// Cek koneksi internet sederhana:
+  /// 1) coba DNS lookup ke example.com
+  /// 2) jika gagal, coba HEAD request ke google.com
+  /// Return true jika salah satu berhasil.
   Future<bool> checkInternet() async {
-    var connectivityResult = await (Connectivity().checkConnectivity());
-    return connectivityResult != ConnectivityResult.none;
+    try {
+      // DNS lookup cepat, tidak memerlukan paket eksternal
+      final result = await InternetAddress.lookup('example.com')
+          .timeout(const Duration(seconds: 4));
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        return true;
+      }
+    } catch (_) {
+      // lanjut ke metode kedua
+    }
+
+    try {
+      final resp = await http
+          .head(Uri.parse('https://www.google.com'))
+          .timeout(const Duration(seconds: 5));
+      if (resp.statusCode == 200 ||
+          resp.statusCode == 301 ||
+          resp.statusCode == 302) {
+        return true;
+      }
+    } catch (_) {
+      // semua gagal -> offline
+    }
+
+    return false;
   }
 
   Future<Map<String, dynamic>> fetchGeraiData(int branchId) async {
