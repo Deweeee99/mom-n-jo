@@ -97,7 +97,7 @@ class FAQScreen extends StatelessWidget {
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Text(
-                      'Jika Anda mengalami masalah, silakan hubungi layanan pelanggan kami melalui menu "Contact Us & Suggestion" atau melalui email di [alamat email kami].',
+                      'Jika Anda mengalami masalah, silakan hubungi layanan pelanggan kami melalui menu "Contact Us & Suggestion" atau melalui email di support@momnjo.com.',
                       style: TextStyle(height: 1.5),
                     ),
                   ),
