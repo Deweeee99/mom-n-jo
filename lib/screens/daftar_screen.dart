@@ -14,7 +14,7 @@ class _DaftarScreenState extends State<DaftarScreen> {
   final TextEditingController _nicknameController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _dateOfBirthController = TextEditingController();
+  // tanggal lahir dihapus dari pendaftaran (tidak ada controller)
 
   bool _isLoading = false;
 
@@ -32,32 +32,35 @@ class _DaftarScreenState extends State<DaftarScreen> {
   Future<void> _fetchGerai() async {
     try {
       final response = await http
-          .get(Uri.parse('https://app.momnjo.com/api/list_gerai.php'));
+          .get(Uri.parse('https://app.momnjo.com/api/list_gerai.php'))
+          .timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
-          _geraiList =
-              data; // asumsikan API mengembalikan list array data gerai
+          _geraiList = data is List ? data : [];
         });
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Error fetching gerai: ${response.statusCode}')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text('Error fetching gerai: ${response.statusCode}')),
+          );
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching gerai: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error fetching gerai: $e')),
+        );
+      }
     }
   }
 
   Future<void> _register() async {
-    // Validasi field wajib
-    if (_fullnameController.text.isEmpty ||
-        _mobileController.text.isEmpty ||
-        _emailController.text.isEmpty ||
-        _dateOfBirthController.text.isEmpty ||
+    // Validasi field wajib (Tanggal Lahir TIDAK wajib)
+    if (_fullnameController.text.trim().isEmpty ||
+        _mobileController.text.trim().isEmpty ||
+        _emailController.text.trim().isEmpty ||
         _selectedGeraiId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Harap isi semua field yang wajib')),
@@ -70,48 +73,58 @@ class _DaftarScreenState extends State<DaftarScreen> {
     });
 
     try {
-      final response = await http.post(
-        Uri.parse('https://app.momnjo.com/api/daftar.php'),
-        body: {
-          'fullname': _fullnameController.text.trim(),
-          'nickname': _nicknameController.text.trim(),
-          'mobile_no': _mobileController.text.trim(),
-          'email': _emailController.text.trim(),
-          'date_of_birth': _dateOfBirthController.text.trim(),
-          'id_gerai': _selectedGeraiId!,
-        },
-      );
+      final body = {
+        'fullname': _fullnameController.text.trim(),
+        'nickname': _nicknameController.text.trim(),
+        'mobile_no': _mobileController.text.trim(),
+        'email': _emailController.text.trim(),
+        'id_gerai': _selectedGeraiId!,
+      };
+
+      final response = await http
+          .post(Uri.parse('https://app.momnjo.com/api/daftar.php'), body: body)
+          .timeout(const Duration(seconds: 15));
 
       final responseData = json.decode(response.body);
 
       if (response.statusCode == 200) {
         if (responseData['status'] == 'success') {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(responseData['message'])),
-          );
-          // Navigasi atau tindakan lain setelah pendaftaran berhasil
-          Navigator.pop(context);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content:
+                      Text(responseData['message'] ?? 'Pendaftaran berhasil')),
+            );
+            Navigator.pop(context);
+          }
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(responseData['message'] ??
-                  'Pendaftaran gagal, silakan coba lagi'),
-            ),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content:
+                      Text(responseData['message'] ?? 'Pendaftaran gagal')),
+            );
+          }
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${response.statusCode}')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${response.statusCode}')),
+          );
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -121,7 +134,6 @@ class _DaftarScreenState extends State<DaftarScreen> {
     _nicknameController.dispose();
     _mobileController.dispose();
     _emailController.dispose();
-    _dateOfBirthController.dispose();
     super.dispose();
   }
 
@@ -201,7 +213,7 @@ class _DaftarScreenState extends State<DaftarScreen> {
                           decoration: InputDecoration(
                             prefixIcon: const Icon(Icons.person_outline,
                                 color: Color(0xFFD4B89C)),
-                            labelText: 'Nama Panggilan',
+                            labelText: 'Nama Panggilan (opsional)',
                             labelStyle: const TextStyle(color: Colors.grey),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
@@ -250,34 +262,24 @@ class _DaftarScreenState extends State<DaftarScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        // Date of Birth Field
-                        TextFormField(
-                          controller: _dateOfBirthController,
-                          decoration: InputDecoration(
-                            prefixIcon: const Icon(Icons.cake,
-                                color: Color(0xFFD4B89C)),
-                            labelText: 'Tanggal Lahir',
-                            labelStyle: const TextStyle(color: Colors.grey),
-                            hintText: 'YYYY-MM-DD',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide.none,
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey.withOpacity(0.1),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
+
                         // Gerai Dropdown
                         DropdownButtonFormField<String>(
                           value: _selectedGeraiId,
-                          items:
-                              _geraiList.map<DropdownMenuItem<String>>((item) {
-                            return DropdownMenuItem<String>(
-                              value: item['id_gerai'].toString(),
-                              child: Text(item['nama_gerai']),
-                            );
-                          }).toList(),
+                          items: _geraiList.isNotEmpty
+                              ? _geraiList
+                                  .map<DropdownMenuItem<String>>((item) {
+                                  return DropdownMenuItem<String>(
+                                    value: item['id_gerai'].toString(),
+                                    child: Text(item['nama_gerai'] ?? '-'),
+                                  );
+                                }).toList()
+                              : [
+                                  const DropdownMenuItem<String>(
+                                    value: null,
+                                    child: Text('Tidak ada gerai'),
+                                  )
+                                ],
                           decoration: InputDecoration(
                             prefixIcon: const Icon(Icons.store,
                                 color: Color(0xFFD4B89C)),
@@ -312,8 +314,13 @@ class _DaftarScreenState extends State<DaftarScreen> {
                               elevation: 3,
                             ),
                             child: _isLoading
-                                ? const CircularProgressIndicator(
-                                    color: Colors.white,
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
                                   )
                                 : const Text(
                                     'DAFTAR',
