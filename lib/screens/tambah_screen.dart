@@ -320,7 +320,7 @@ class _TambahScreenState extends State<TambahScreen> {
         'gerai': _selectedGerai ?? '',
         'mobile_no': _mobileNoController.text.trim(),
         'terapis': _selectedTerapis ?? '',
-        'down_payment': '100000',
+        'down_payment': '0',
       });
 
       if (response.statusCode == 200) {
