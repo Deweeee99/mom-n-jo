@@ -1,9 +1,12 @@
-// tambah_screen.dart
+// tambah_screen.dart (revisi full, fix TimeoutException & web-friendly)
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter/services.dart'; // Clipboard
+import 'package:url_launcher/url_launcher.dart';
 
 class TambahScreen extends StatefulWidget {
   const TambahScreen({super.key});
@@ -28,6 +31,9 @@ class _TambahScreenState extends State<TambahScreen> {
   List<dynamic> _terapisList = [];
   String? _selectedTerapis;
 
+  // identitas (rekening, whatsapp, email, nama_website, no_telp)
+  Map<String, dynamic>? _identitasData;
+
   // User
   bool _isLoggedIn = false;
   String? _idCustomer;
@@ -35,6 +41,9 @@ class _TambahScreenState extends State<TambahScreen> {
 
   // ensure arguments processed only once
   bool _argsProcessed = false;
+
+  // submission state
+  bool _isSubmitting = false;
 
   // Time slots
   final List<String> _timeSlots = [
@@ -60,8 +69,9 @@ class _TambahScreenState extends State<TambahScreen> {
   @override
   void initState() {
     super.initState();
-    _loadLoginData(); // load prefs, may set _idCustomer and trigger fetchCustomerMobile
+    _loadLoginData();
     _fetchGerai();
+    _fetchIdentitas();
   }
 
   @override
@@ -71,7 +81,6 @@ class _TambahScreenState extends State<TambahScreen> {
       final argsRaw = ModalRoute.of(context)?.settings.arguments;
       Map<String, dynamic>? argsMap;
 
-      // tolerate wrapped bookingData or direct map
       if (argsRaw is Map<String, dynamic>) {
         if (argsRaw.containsKey('bookingData') &&
             argsRaw['bookingData'] is Map<String, dynamic>) {
@@ -113,13 +122,11 @@ class _TambahScreenState extends State<TambahScreen> {
             _selectedGerai = gerai.toString();
             _fetchTerapis(_selectedGerai!);
           }
-          // priority: mobile from args
           if (mobileFromArgs != null && mobileFromArgs.toString().isNotEmpty) {
             _mobileNoController.text = mobileFromArgs.toString();
           }
         });
 
-        // if id_customer present and mobile not already set from args/prefs, fetch from server
         if (_idCustomer != null && (_mobileNoController.text.isEmpty)) {
           _fetchCustomerMobile(_idCustomer!);
         }
@@ -141,7 +148,6 @@ class _TambahScreenState extends State<TambahScreen> {
       _idCustomer = _idCustomer ?? customerId;
       _fullname = _fullname ?? name;
 
-      // prefer controller value (args) then prefs
       if ((_mobileNoController.text.isEmpty) &&
           mobilePref != null &&
           mobilePref.isNotEmpty) {
@@ -149,7 +155,6 @@ class _TambahScreenState extends State<TambahScreen> {
       }
     });
 
-    // if we now have id_customer (from prefs) and no mobile yet, fetch from server
     if (_idCustomer != null &&
         _idCustomer!.isNotEmpty &&
         _mobileNoController.text.isEmpty) {
@@ -169,8 +174,6 @@ class _TambahScreenState extends State<TambahScreen> {
         final decoded = json.decode(response.body);
         String? mobile;
 
-        // tolerate a few possible response shapes:
-        // 1) { "status":"success", "data": { "mobile_no": "0812..." } }
         if (decoded is Map<String, dynamic>) {
           if (decoded['data'] is Map && decoded['data']['mobile_no'] != null) {
             mobile = decoded['data']['mobile_no'].toString();
@@ -203,7 +206,7 @@ class _TambahScreenState extends State<TambahScreen> {
   Future<void> _fetchGerai() async {
     final url = Uri.parse('https://app.momnjo.com/api/get_gerai_book.php');
     try {
-      final response = await http.get(url);
+      final response = await http.get(url).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final decoded = json.decode(response.body);
         List<dynamic> dataList = decoded is List
@@ -222,7 +225,7 @@ class _TambahScreenState extends State<TambahScreen> {
         );
       }
     } catch (e) {
-      debugPrint(e.toString());
+      debugPrint('[TambahScreen] Exception _fetchGerai: $e');
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Exception: $e')));
     }
@@ -232,7 +235,7 @@ class _TambahScreenState extends State<TambahScreen> {
     final url = Uri.parse(
         'https://app.momnjo.com/api/get_terapis.php?gerai=$kodeGerai');
     try {
-      final response = await http.get(url);
+      final response = await http.get(url).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final decoded = json.decode(response.body);
         List<dynamic> dataList = decoded is List
@@ -251,9 +254,38 @@ class _TambahScreenState extends State<TambahScreen> {
         );
       }
     } catch (e) {
-      debugPrint(e.toString());
+      debugPrint('[TambahScreen] Exception _fetchTerapis: $e');
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Exception: $e')));
+    }
+  }
+
+  Future<void> _fetchIdentitas() async {
+    final url = Uri.parse('https://app.momnjo.com/api/get_identitas.php');
+    try {
+      debugPrint('[TambahScreen] fetching identitas');
+      final response = await http.get(url).timeout(const Duration(seconds: 10));
+      debugPrint('[TambahScreen] get_identitas status: ${response.statusCode}');
+      debugPrint('[TambahScreen] get_identitas body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        if (decoded is Map<String, dynamic> &&
+            decoded['status'] == 'success' &&
+            decoded['data'] is Map<String, dynamic>) {
+          setState(() {
+            _identitasData = Map<String, dynamic>.from(
+                decoded['data'] as Map<String, dynamic>);
+          });
+        } else {
+          debugPrint('[TambahScreen] get_identitas unexpected format');
+        }
+      } else {
+        debugPrint(
+            '[TambahScreen] get_identitas non-200: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('[TambahScreen] Exception fetchIdentitas: $e');
     }
   }
 
@@ -306,6 +338,10 @@ class _TambahScreenState extends State<TambahScreen> {
       return;
     }
 
+    setState(() {
+      _isSubmitting = true;
+    });
+
     final dateString = DateFormat('yyyy-MM-dd').format(_selectedDate!);
     final timeString = '$_selectedTimeSlot:00';
     final remark = _remarkController.text.trim();
@@ -321,22 +357,79 @@ class _TambahScreenState extends State<TambahScreen> {
         'mobile_no': _mobileNoController.text.trim(),
         'terapis': _selectedTerapis ?? '',
         'down_payment': '0',
-      });
+      }).timeout(const Duration(seconds: 20));
+
+      debugPrint(
+          '[TambahScreen] tambah_transaksi status: ${response.statusCode}');
+      debugPrint('[TambahScreen] tambah_transaksi body: ${response.body}');
 
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
+
         if (result['status'] == 'success') {
+          // Compose message with identitas data (fall back if null)
+          final namaSpa =
+              _identitasData?['nama_website']?.toString() ?? 'Mom N Jo';
+          final rekening =
+              _identitasData?['rekening']?.toString() ?? '[metode pembayaran]';
+          final wa = _identitasData?['whatsapp']?.toString() ?? '';
+          final email = _identitasData?['email']?.toString() ?? '';
+          final noTelp = _identitasData?['no_telp']?.toString() ?? '';
+
+          String kontakKonfirmasi;
+          if (wa.isNotEmpty && email.isNotEmpty) {
+            kontakKonfirmasi = 'WhatsApp $wa atau email $email';
+          } else if (wa.isNotEmpty) {
+            kontakKonfirmasi = 'WhatsApp $wa';
+          } else if (email.isNotEmpty) {
+            kontakKonfirmasi = 'email $email';
+          } else if (noTelp.isNotEmpty) {
+            kontakKonfirmasi = 'Telp $noTelp';
+          } else {
+            kontakKonfirmasi = '[nomor WhatsApp/email]';
+          }
+
+          final pesanKonfirmasi = """
+Halo ${_fullname ?? ''}, terima kasih telah melakukan pemesanan treatment di $namaSpa!
+
+Agar booking Anda dapat dikonfirmasi dan slot waktu tetap tersedia, mohon segera lakukan pembayaran booking fee sebesar IDR 100.000 ke:
+$rekening
+
+Setelah pembayaran dilakukan, silakan kirim bukti transfer ke $kontakKonfirmasi. Jika dalam 2 jam belum ada pembayaran, booking akan dibatalkan secara otomatis.
+
+Terima kasih, kami tunggu konfirmasi Anda!
+
+$namaSpa
+$noTelp
+""";
+
+          // Show dialog with actions: copy rekening, open WA (if available), OK
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
-              title: const Text("Mom N Joo - Konfirmasi Booking"),
+              title: const Text("Konfirmasi Booking"),
               content: SingleChildScrollView(
-                child: Text(
-                  "Halo ${_fullname ?? ''}, terima kasih telah melakukan pemesanan treatment di Mom N Jo!\n\nAgar booking Anda dapat dikonfirmasi dan slot waktu tetap tersedia, mohon segera lakukan pembayaran booking fee sebesar IDR 100.000 ke [metode pembayaran].\n\nSetelah pembayaran dilakukan, silakan kirim bukti transfer ke [nomor WhatsApp/email]. Jika dalam 2 jam belum ada pembayaran, booking akan dibatalkan secara otomatis.\n\nTerima kasih, kami tunggu konfirmasi Anda!\n\n[Nama Spa & Kontak Anda]",
-                  softWrap: true,
-                ),
+                child: Text(pesanKonfirmasi),
               ),
               actions: [
+                TextButton(
+                  onPressed: () {
+                    final textToCopy = rekening;
+                    Clipboard.setData(ClipboardData(text: textToCopy));
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text('Rekening disalin ke clipboard')));
+                  },
+                  child: const Text('Salin Rekening'),
+                ),
+                if (wa.isNotEmpty)
+                  TextButton(
+                    onPressed: () {
+                      _openWhatsAppWithMessage(wa, pesanKonfirmasi);
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text('Kirim via WhatsApp'),
+                  ),
                 TextButton(
                   onPressed: () {
                     Navigator.pop(context);
@@ -349,17 +442,41 @@ class _TambahScreenState extends State<TambahScreen> {
             ),
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error: ${result['message']}')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('Error: ${result['message'] ?? 'unknown'}')));
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Server error: ${response.statusCode}')));
       }
+    } on FormatException {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Response format error.')));
+    } on TimeoutException {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Koneksi timeout. Silakan coba lagi.')));
     } catch (e) {
-      debugPrint(e.toString());
+      debugPrint('[TambahScreen] Exception _submitData: $e');
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Exception: $e')));
+    } finally {
+      setState(() {
+        _isSubmitting = false;
+      });
+    }
+  }
+
+  Future<void> _openWhatsAppWithMessage(String waNumber, String message) async {
+    // Normalize WA number (remove spaces, plus, etc.)
+    var number = waNumber.replaceAll(RegExp(r'[\s\-\+\(\)]'), '');
+    final encoded = Uri.encodeComponent(message);
+    final waUrl = Uri.parse('https://wa.me/$number?text=$encoded');
+
+    if (await canLaunchUrl(waUrl)) {
+      await launchUrl(waUrl, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tidak dapat membuka WhatsApp')));
     }
   }
 
@@ -371,7 +488,7 @@ class _TambahScreenState extends State<TambahScreen> {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      color: Colors.white.withOpacity(0.9),
+      color: Colors.white.withOpacity(0.95),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -419,7 +536,7 @@ class _TambahScreenState extends State<TambahScreen> {
                 ),
                 items: _geraiList.map((item) {
                   return DropdownMenuItem<String>(
-                    value: item['kode_gerai'],
+                    value: item['kode_gerai']?.toString(),
                     child:
                         Text('${item['nama_gerai']} (${item['kode_gerai']})'),
                   );
@@ -447,8 +564,8 @@ class _TambahScreenState extends State<TambahScreen> {
                       value: "any therapist", child: Text("any therapist")),
                   ..._terapisList.map((item) {
                     return DropdownMenuItem<String>(
-                      value: item['username'],
-                      child: Text(item['username']),
+                      value: item['username']?.toString(),
+                      child: Text(item['username']?.toString() ?? ''),
                     );
                   }).toList(),
                 ],
@@ -522,18 +639,29 @@ class _TambahScreenState extends State<TambahScreen> {
               ),
               const SizedBox(height: 20),
               // Tombol Submit
-              ElevatedButton.icon(
-                onPressed: _submitData,
-                icon: const Icon(Icons.save),
-                label: const Text('Simpan Booking'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFB5C2),
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  textStyle: const TextStyle(fontSize: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _isSubmitting ? null : _submitData,
+                  icon: _isSubmitting
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.save),
+                  label:
+                      Text(_isSubmitting ? 'Menyimpan...' : 'Simpan Booking'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFB5C2),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    textStyle: const TextStyle(fontSize: 16),
+                  ),
                 ),
               ),
             ],
