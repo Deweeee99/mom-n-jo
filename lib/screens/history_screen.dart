@@ -171,7 +171,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       );
     } else {
       additionalInfo = const Text(
-        'History Booking terdahulu',
+        'Booking sedang diproses',
         style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
       );
     }

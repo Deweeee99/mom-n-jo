@@ -1,4 +1,4 @@
-// tambah_screen.dart (revisi full, fix TimeoutException & web-friendly)
+// tambah_screen.dart (revisi penuh + kirim detail ke transaksi_detail)
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -18,34 +18,27 @@ class TambahScreen extends StatefulWidget {
 class _TambahScreenState extends State<TambahScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Form controllers & state
   DateTime? _selectedDate;
   String? _selectedTimeSlot;
   final TextEditingController _remarkController = TextEditingController();
   final TextEditingController _mobileNoController = TextEditingController();
 
-  // Dropdown data
   List<dynamic> _geraiList = [];
   String? _selectedGerai;
 
   List<dynamic> _terapisList = [];
   String? _selectedTerapis;
 
-  // identitas (rekening, whatsapp, email, nama_website, no_telp)
   Map<String, dynamic>? _identitasData;
 
-  // User
   bool _isLoggedIn = false;
   String? _idCustomer;
   String? _fullname;
 
-  // ensure arguments processed only once
   bool _argsProcessed = false;
 
-  // submission state
   bool _isSubmitting = false;
 
-  // Time slots
   final List<String> _timeSlots = [
     "09:00",
     "09:30",
@@ -65,6 +58,9 @@ class _TambahScreenState extends State<TambahScreen> {
     "16:30",
     "17:00",
   ];
+
+  // simpan selected treatments dari BookingDetail
+  List<Map<String, dynamic>> _selectedTreatments = [];
 
   @override
   void initState() {
@@ -100,6 +96,26 @@ class _TambahScreenState extends State<TambahScreen> {
       debugPrint('[TambahScreen] parsed argsMap: $argsMap');
 
       if (argsMap != null) {
+        // baca selectedTreatments (expect key 'idItem' from booking_treatment)
+        if (argsMap['selectedTreatments'] != null &&
+            argsMap['selectedTreatments'] is List) {
+          try {
+            _selectedTreatments = (argsMap['selectedTreatments'] as List)
+                .map((e) {
+                  if (e is Map<String, dynamic>)
+                    return Map<String, dynamic>.from(e);
+                  if (e is Map) return Map<String, dynamic>.from(e as Map);
+                  return <String, dynamic>{};
+                })
+                .where((m) => m.isNotEmpty)
+                .toList();
+            debugPrint(
+                '[TambahScreen] loaded selectedTreatments: $_selectedTreatments');
+          } catch (e) {
+            debugPrint('[TambahScreen] error parsing selectedTreatments: $e');
+          }
+        }
+
         final idCustomer = argsMap['id_customer'] ??
             argsMap['idCustomer'] ??
             argsMap['customer'];
@@ -135,7 +151,6 @@ class _TambahScreenState extends State<TambahScreen> {
     }
   }
 
-  // load prefs; if id_customer exists here, fetch mobile from server
   Future<void> _loadLoginData() async {
     final prefs = await SharedPreferences.getInstance();
     final loggedIn = prefs.getBool('isLoggedIn') ?? false;
@@ -162,7 +177,6 @@ class _TambahScreenState extends State<TambahScreen> {
     }
   }
 
-  // fetch mobile_no from server using id_customer
   Future<void> _fetchCustomerMobile(String idCustomer) async {
     final url =
         Uri.parse('https://app.momnjo.com/api/get_customer.php?id=$idCustomer');
@@ -189,6 +203,7 @@ class _TambahScreenState extends State<TambahScreen> {
 
         if (mobile != null && mobile.isNotEmpty) {
           setState(() {
+            // non-null assertion safe karena sudah dicek
             _mobileNoController.text = mobile!;
           });
         } else {
@@ -346,6 +361,40 @@ class _TambahScreenState extends State<TambahScreen> {
     final timeString = '$_selectedTimeSlot:00';
     final remark = _remarkController.text.trim();
 
+    // build detail payload aligned with PHP expectation (idItem, nama_item_master, qty, product_price)
+    List<Map<String, dynamic>> detail;
+    if (_selectedTreatments.isNotEmpty) {
+      detail = _selectedTreatments.map((t) {
+        final idItem = t['idItem'] ?? t['id_item_master'] ?? t['id'] ?? '';
+        final name =
+            t['nama_item_master'] ?? t['nama_item'] ?? t['product_name'] ?? '';
+        final qty = (t['qty'] is int)
+            ? t['qty']
+            : int.tryParse((t['qty'] ?? '1').toString()) ?? 1;
+        final price = (t['product_price'] is int)
+            ? t['product_price']
+            : int.tryParse((t['product_price'] ?? '0').toString()) ?? 0;
+
+        return {
+          'idItem': idItem,
+          'nama_item_master': name,
+          'qty': qty,
+          'product_price': price,
+        };
+      }).toList();
+    } else {
+      detail = [
+        {
+          'idItem': 'BOOKINGFEE',
+          'nama_item_master': 'Booking Fee',
+          'qty': 1,
+          'product_price': 100000,
+        }
+      ];
+    }
+
+    debugPrint('[TambahScreen] detail payload: ${jsonEncode(detail)}');
+
     try {
       final uri = Uri.parse('https://app.momnjo.com/api/tambah_transaksi.php');
       final response = await http.post(uri, body: {
@@ -357,6 +406,8 @@ class _TambahScreenState extends State<TambahScreen> {
         'mobile_no': _mobileNoController.text.trim(),
         'terapis': _selectedTerapis ?? '',
         'down_payment': '0',
+        'detail':
+            jsonEncode(detail), // kirim sebagai string sesuai PHP saat ini
       }).timeout(const Duration(seconds: 20));
 
       debugPrint(
@@ -365,9 +416,7 @@ class _TambahScreenState extends State<TambahScreen> {
 
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
-
         if (result['status'] == 'success') {
-          // Compose message with identitas data (fall back if null)
           final namaSpa =
               _identitasData?['nama_website']?.toString() ?? 'Mom N Jo';
           final rekening =
@@ -403,14 +452,11 @@ $namaSpa
 $noTelp
 """;
 
-          // Show dialog with actions: copy rekening, open WA (if available), OK
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
               title: const Text("Konfirmasi Booking"),
-              content: SingleChildScrollView(
-                child: Text(pesanKonfirmasi),
-              ),
+              content: SingleChildScrollView(child: Text(pesanKonfirmasi)),
               actions: [
                 TextButton(
                   onPressed: () {
@@ -422,10 +468,13 @@ $noTelp
                   },
                   child: const Text('Salin Rekening'),
                 ),
-                if (wa.isNotEmpty)
+                if (_identitasData?['whatsapp'] != null &&
+                    _identitasData!['whatsapp'].toString().isNotEmpty)
                   TextButton(
                     onPressed: () {
-                      _openWhatsAppWithMessage(wa, pesanKonfirmasi);
+                      _openWhatsAppWithMessage(
+                          _identitasData!['whatsapp'].toString(),
+                          pesanKonfirmasi);
                       Navigator.of(context).pop();
                     },
                     child: const Text('Kirim via WhatsApp'),
@@ -467,7 +516,6 @@ $noTelp
   }
 
   Future<void> _openWhatsAppWithMessage(String waNumber, String message) async {
-    // Normalize WA number (remove spaces, plus, etc.)
     var number = waNumber.replaceAll(RegExp(r'[\s\-\+\(\)]'), '');
     final encoded = Uri.encodeComponent(message);
     final waUrl = Uri.parse('https://wa.me/$number?text=$encoded');
@@ -495,45 +543,35 @@ $noTelp
           key: _formKey,
           child: Column(
             children: [
-              // Nama Pelanggan (read-only)
               TextFormField(
                 decoration: const InputDecoration(
-                  labelText: 'Nama Pelanggan',
-                  prefixIcon: Icon(Icons.person),
-                ),
+                    labelText: 'Nama Pelanggan',
+                    prefixIcon: Icon(Icons.person)),
                 readOnly: true,
                 initialValue: _fullname ?? 'No Name',
               ),
               const SizedBox(height: 16),
-              // ID Customer (read-only)
               TextFormField(
                 decoration: const InputDecoration(
-                  labelText: 'ID Customer',
-                  prefixIcon: Icon(Icons.numbers),
-                ),
+                    labelText: 'ID Customer', prefixIcon: Icon(Icons.numbers)),
                 readOnly: true,
                 initialValue: _idCustomer ?? '',
               ),
               const SizedBox(height: 16),
-              // Nomor Telepon (read-only)
               TextFormField(
                 controller: _mobileNoController,
                 decoration: const InputDecoration(
-                  labelText: 'Nomor Telepon',
-                  prefixIcon: Icon(Icons.phone),
-                ),
+                    labelText: 'Nomor Telepon', prefixIcon: Icon(Icons.phone)),
                 readOnly: true,
               ),
               const SizedBox(height: 16),
-              // Dropdown Pilih Gerai
               DropdownButtonFormField<String>(
                 value: _selectedGerai,
                 decoration: InputDecoration(
-                  labelText: 'Pilih Gerai',
-                  prefixIcon: const Icon(Icons.store),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
+                    labelText: 'Pilih Gerai',
+                    prefixIcon: const Icon(Icons.store),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12))),
                 items: _geraiList.map((item) {
                   return DropdownMenuItem<String>(
                     value: item['kode_gerai']?.toString(),
@@ -550,15 +588,13 @@ $noTelp
                 hint: const Text('Pilih Gerai'),
               ),
               const SizedBox(height: 16),
-              // Dropdown Pilih Terapis
               DropdownButtonFormField<String>(
                 value: _selectedTerapis,
                 decoration: InputDecoration(
-                  labelText: 'Pilih Terapis',
-                  prefixIcon: const Icon(Icons.person_outline),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
+                    labelText: 'Pilih Terapis',
+                    prefixIcon: const Icon(Icons.person_outline),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12))),
                 items: [
                   const DropdownMenuItem<String>(
                       value: "any therapist", child: Text("any therapist")),
@@ -577,40 +613,34 @@ $noTelp
                 hint: const Text('Pilih Terapis'),
               ),
               const SizedBox(height: 16),
-              // Pilih Tanggal Booking
               InkWell(
                 onTap: () => _pickDate(context),
                 child: InputDecorator(
                   decoration: InputDecoration(
-                    labelText: 'Tanggal Booking',
-                    prefixIcon: const Icon(Icons.date_range),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
+                      labelText: 'Tanggal Booking',
+                      prefixIcon: const Icon(Icons.date_range),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12))),
                   child: Text(dateDisplay),
                 ),
               ),
               const SizedBox(height: 16),
-              // Dropdown Pilih Jam Booking
               DropdownButtonFormField<String>(
                 value: _selectedTimeSlot,
                 decoration: InputDecoration(
-                  labelText: 'Jam Booking',
-                  prefixIcon: const Icon(Icons.access_time_outlined),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
+                    labelText: 'Jam Booking',
+                    prefixIcon: const Icon(Icons.access_time_outlined),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12))),
                 hint: const Text('Pilih Jam Booking'),
                 items: _timeSlots.map((slot) {
                   return DropdownMenuItem<String>(
                     value: slot,
-                    child: Text(
-                      slot,
-                      style: TextStyle(
-                          color: isDisabledTime(slot)
-                              ? Colors.grey
-                              : Colors.black),
-                    ),
+                    child: Text(slot,
+                        style: TextStyle(
+                            color: isDisabledTime(slot)
+                                ? Colors.grey
+                                : Colors.black)),
                   );
                 }).toList(),
                 onChanged: (value) {
@@ -626,19 +656,16 @@ $noTelp
                 },
               ),
               const SizedBox(height: 16),
-              // Catatan / Keterangan
               TextFormField(
                 controller: _remarkController,
                 decoration: InputDecoration(
-                  labelText: 'Catatan / Keterangan',
-                  prefixIcon: const Icon(Icons.note_alt_outlined),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
+                    labelText: 'Catatan / Keterangan',
+                    prefixIcon: const Icon(Icons.note_alt_outlined),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12))),
                 maxLines: 3,
               ),
               const SizedBox(height: 20),
-              // Tombol Submit
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -648,20 +675,18 @@ $noTelp
                           height: 18,
                           width: 18,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
-                        )
+                              strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.save),
                   label:
                       Text(_isSubmitting ? 'Menyimpan...' : 'Simpan Booking'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFB5C2),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    textStyle: const TextStyle(fontSize: 16),
-                  ),
+                      backgroundColor: const Color(0xFFFFB5C2),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      textStyle: const TextStyle(fontSize: 16)),
                 ),
               ),
             ],
@@ -673,9 +698,9 @@ $noTelp
 
   Widget _buildNotLoggedInView() {
     return Center(
-      child: Text('Anda belum login!',
-          style: TextStyle(fontSize: 18, color: Colors.black.withOpacity(0.7))),
-    );
+        child: Text('Anda belum login!',
+            style:
+                TextStyle(fontSize: 18, color: Colors.black.withOpacity(0.7))));
   }
 
   @override
@@ -688,20 +713,18 @@ $noTelp
           elevation: 0),
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-              colors: [Color(0xFFFFE3EC), Color(0xFFFFF5F7)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter),
-        ),
+            gradient: LinearGradient(
+                colors: [Color(0xFFFFE3EC), Color(0xFFFFF5F7)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter)),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-            child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 400),
-                child: _isLoggedIn
-                    ? _buildFormContent()
-                    : _buildNotLoggedInView()),
-          ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 400),
+                  child: _isLoggedIn
+                      ? _buildFormContent()
+                      : _buildNotLoggedInView())),
         ),
       ),
     );

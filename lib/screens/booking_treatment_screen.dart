@@ -1,3 +1,4 @@
+// booking_treatment_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -69,7 +70,6 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
     });
   }
 
-  // Cek status login, jika belum login langsung arahkan ke halaman login
   Future<void> _checkLogin() async {
     final prefs = await SharedPreferences.getInstance();
     final bool loggedIn = prefs.getBool('isLoggedIn') ?? false;
@@ -88,7 +88,6 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
     }
   }
 
-  /// Fungsi mengambil data treatment dari server
   Future<List<TreatmentItem>> fetchTreatmentItems(int subcategoryId) async {
     final url = Uri.parse(
       'https://app.momnjo.com/api/get_items_by_subcategory.php?subcatId=$subcategoryId',
@@ -118,11 +117,10 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Diasumsikan user sudah login, karena _checkLogin() akan mengarahkan bila belum.
     return Scaffold(
       appBar: AppBar(
         title: Text('Pilih Treatment - ${widget.subcategoryName}'),
-        backgroundColor: const Color(0xFFAA6939), // Header senada dengan tombol
+        backgroundColor: const Color(0xFFAA6939),
       ),
       body: FutureBuilder<List<TreatmentItem>>(
         future: _futureItems,
@@ -147,7 +145,6 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: Row(
                   children: [
-                    // Foto treatment
                     Container(
                       margin: const EdgeInsets.all(8),
                       child: ClipRRect(
@@ -168,7 +165,6 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
                         ),
                       ),
                     ),
-                    // Informasi treatment
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -197,7 +193,6 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
                         ),
                       ),
                     ),
-                    // Kontrol jumlah (qty)
                     Container(
                       margin: const EdgeInsets.only(right: 8),
                       child: Row(
@@ -233,12 +228,11 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
           );
         },
       ),
-      // Tombol "Lanjutkan Booking" di bagian bawah layar
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFAA6939), // Sesuai header
+            backgroundColor: const Color(0xFFAA6939),
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
@@ -248,28 +242,28 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
           child: const Text('Lanjutkan Booking'),
           onPressed: () {
             try {
-              final selectedList = selectedItems.entries
-                  .where((e) => e.value > 0)
-                  .map((e) {
-                    final treatment = _treatmentItems?.firstWhere(
-                      (item) => item.idItem == e.key,
-                      orElse: () => TreatmentItem(
-                        idItem: e.key,
-                        namaItem: 'Unknown',
-                        satuan: '',
-                        gambar: '',
-                        price: 0,
-                      ),
-                    );
-                    return {
-                      'idItem': e.key,
-                      'qty': e.value,
-                      'nama_item_master':
-                          treatment?.namaItem ?? 'Unknown Treatment',
-                      'product_price': treatment?.price ?? 0,
-                    };
-                  })
-                  .toList();
+              final selectedList =
+                  selectedItems.entries.where((e) => e.value > 0).map((e) {
+                final treatment = _treatmentItems?.firstWhere(
+                  (item) => item.idItem == e.key,
+                  orElse: () => TreatmentItem(
+                    idItem: e.key,
+                    namaItem: 'Unknown',
+                    satuan: '',
+                    gambar: '',
+                    price: 0,
+                  ),
+                );
+
+                return {
+                  // kirim 'idItem' supaya sesuai dengan PHP
+                  'idItem': int.tryParse(e.key) ?? e.key,
+                  'nama_item_master':
+                      treatment?.namaItem ?? 'Unknown Treatment',
+                  'qty': e.value,
+                  'product_price': treatment?.price ?? 0,
+                };
+              }).toList();
 
               if (selectedList.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
