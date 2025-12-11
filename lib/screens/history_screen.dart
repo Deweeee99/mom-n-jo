@@ -22,13 +22,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
   String _idCustomer = '';
   List<dynamic> _listTransaksi = [];
 
+  // untuk auto-expire
   Timer? _timer;
   final Set<String> _expiredTransactions = {};
+
+  // identitas (rekening, whatsapp, email, nama_website, no_telp)
+  Map<String, dynamic>? _identitasData;
 
   @override
   void initState() {
     super.initState();
     _checkLoginAndFetch();
+    _fetchIdentitas(); // ambil rekening + WA dari API
+
     // Update setiap detik untuk countdown real-time
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) setState(() {});
@@ -79,6 +85,106 @@ class _HistoryScreenState extends State<HistoryScreen> {
     } catch (e) {
       debugPrint('Error fetching data: $e');
     }
+  }
+
+  // Ambil identitas (rekening, whatsapp, email, nama_website, no_telp)
+  Future<void> _fetchIdentitas() async {
+    final url = Uri.parse('https://app.momnjo.com/api/get_identitas.php');
+    try {
+      debugPrint('[HistoryScreen] fetching identitas');
+      final response = await http.get(url).timeout(const Duration(seconds: 10));
+      debugPrint(
+          '[HistoryScreen] get_identitas status: ${response.statusCode}');
+      debugPrint('[HistoryScreen] get_identitas body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        if (decoded is Map<String, dynamic> &&
+            decoded['status'] == 'success' &&
+            decoded['data'] is Map<String, dynamic>) {
+          setState(() {
+            _identitasData = Map<String, dynamic>.from(
+                decoded['data'] as Map<String, dynamic>);
+          });
+        } else {
+          debugPrint('[HistoryScreen] get_identitas unexpected format');
+        }
+      } else {
+        debugPrint(
+            '[HistoryScreen] get_identitas non-200: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('[HistoryScreen] Exception fetchIdentitas: $e');
+    }
+  }
+
+  // Pop up info "kirim bukti kemana" untuk booking yang sedang diproses
+  void _showBookingInfoDialog() {
+    final namaSpa =
+        _identitasData?['nama_website']?.toString().trim().isNotEmpty == true
+            ? _identitasData!['nama_website'].toString()
+            : 'Mom N Jo';
+
+    final rekening =
+        _identitasData?['rekening']?.toString().trim().isNotEmpty == true
+            ? _identitasData!['rekening'].toString()
+            : '[metode pembayaran]';
+
+    final wa = _identitasData?['whatsapp']?.toString().trim().isNotEmpty == true
+        ? _identitasData!['whatsapp'].toString()
+        : '';
+
+    final email = _identitasData?['email']?.toString().trim().isNotEmpty == true
+        ? _identitasData!['email'].toString()
+        : '';
+
+    final noTelp =
+        _identitasData?['no_telp']?.toString().trim().isNotEmpty == true
+            ? _identitasData!['no_telp'].toString()
+            : '';
+
+    String kontakKonfirmasi;
+    if (wa.isNotEmpty && email.isNotEmpty) {
+      kontakKonfirmasi = 'WhatsApp $wa atau email $email';
+    } else if (wa.isNotEmpty) {
+      kontakKonfirmasi = 'WhatsApp $wa';
+    } else if (email.isNotEmpty) {
+      kontakKonfirmasi = 'email $email';
+    } else if (noTelp.isNotEmpty) {
+      kontakKonfirmasi = 'Telp $noTelp';
+    } else {
+      kontakKonfirmasi = '[nomor WhatsApp/email]';
+    }
+
+    final pesan = """
+Terima kasih telah melakukan pemesanan treatment di $namaSpa!
+
+Agar booking Anda dapat dikonfirmasi dan slot waktu tetap tersedia, mohon segera lakukan pembayaran booking fee sebesar IDR 100.000 ke:
+$rekening
+
+Setelah pembayaran dilakukan, silakan kirim bukti transfer ke $kontakKonfirmasi. Setelah di-ACC oleh admin, jika dalam 2 jam belum ada pembayaran, booking akan dibatalkan secara otomatis.
+
+Terima kasih, kami tunggu konfirmasi Anda!
+
+$namaSpa
+$noTelp
+""";
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Informasi Pembayaran"),
+        content: SingleChildScrollView(
+          child: Text(pesan),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Tutup'),
+          ),
+        ],
+      ),
+    );
   }
 
   // Auto-expire: jika waktu sudah habis, update status menjadi "Deleted"
@@ -133,7 +239,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     Duration timeLeft = deadline.difference(now);
     bool isExpired = now.isAfter(deadline);
 
-    // Jika waktu sudah habis dan status belum "deleted", auto-expire (sekali saja)
+    // Auto-expire
     if (timeLeft.inSeconds <= 0 &&
         !_expiredTransactions.contains(trx['id_transaksi'].toString()) &&
         statusRaw != "deleted" &&
@@ -144,7 +250,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       });
     }
 
-    // Countdown hanya untuk status "acc" (jika waktu tersisa > 0 dan belum expired)
+    // Countdown hanya untuk status "acc"
     bool showCountdown = false;
     String countdownLabel = "";
     if (statusRaw == "acc" && timeLeft.inSeconds > 0 && !isExpired) {
@@ -152,7 +258,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       countdownLabel = "Waktu berjalan:";
     }
 
-    // Tentukan keterangan tambahan berdasarkan status
+    // Keterangan tambahan berdasarkan status
     Widget additionalInfo;
     if (statusRaw == "acc") {
       additionalInfo = const Text(
@@ -169,18 +275,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
         'Booking Sudah expired',
         style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
       );
-    } else {
+    } else if (statusRaw == "booking") {
       additionalInfo = const Text(
-        'Booking sedang diproses',
+        'Booking menunggu ACC dari admin',
         style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
       );
+    } else {
+      additionalInfo = const SizedBox.shrink();
     }
 
-    // Tentukan apakah card dapat di-tap:
-    // - Hanya jika status adalah "acc", card dapat di-tap ke halaman upload pembayaran.
-    bool isClickable = (statusRaw == "acc");
+    // Card bisa di-tap:
+    // - status "acc": ke upload pembayaran
+    // - status "booking": popup info rekening + WA
+    final bool isClickable = (statusRaw == "acc" || statusRaw == "booking");
 
-    // Atur warna kartu:
+    // warna kartu
     Color cardColor;
     if (isExpired) {
       cardColor = Colors.grey.shade300;
@@ -211,7 +320,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
             Text('Customer: ${trx['customer']}'),
             if (showCountdown)
               Text(
-                '$countdownLabel ${timeLeft.inMinutes.remainder(60).toString().padLeft(2, "0")} : ${timeLeft.inSeconds.remainder(60).toString().padLeft(2, "0")}',
+                '$countdownLabel '
+                '${timeLeft.inMinutes.remainder(60).toString().padLeft(2, "0")} : '
+                '${timeLeft.inSeconds.remainder(60).toString().padLeft(2, "0")}',
                 style: const TextStyle(color: Colors.red),
               ),
             if (isExpired)
@@ -224,18 +335,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
         isThreeLine: true,
         onTap: isClickable
             ? () {
-                // Jika status acc, card dapat di-tap untuk ke halaman upload pembayaran.
-                Navigator.pushNamed(
-                  context,
-                  '/UploadPaymen',
-                  arguments: {'idTransaksi': trx['id_transaksi']},
-                );
+                if (statusRaw == "acc") {
+                  // status acc -> ke upload bukti pembayaran
+                  Navigator.pushNamed(
+                    context,
+                    '/UploadPaymen',
+                    arguments: {'idTransaksi': trx['id_transaksi']},
+                  );
+                } else if (statusRaw == "booking") {
+                  // status booking -> pop up info rekening + WA
+                  _showBookingInfoDialog();
+                }
               }
             : null,
       ),
     );
 
-    // Jika status masih "booking" dan belum expired, izinkan swipe untuk membatalkan.
+    // Swipe-to-delete hanya untuk status "booking" yang belum expired
     if ((statusRaw == "booking") && !isExpired) {
       return Dismissible(
         key: Key(trx['id_transaksi'].toString()),
