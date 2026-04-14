@@ -87,7 +87,7 @@ class _TambahScreenState extends State<TambahScreen> {
             _selectedTreatments = (argsMap['selectedTreatments'] as List)
                 .map((e) {
                   if (e is Map<String, dynamic>) return Map<String, dynamic>.from(e);
-                  if (e is Map) return Map<String, dynamic>.from(e as Map);
+                  if (e is Map) return Map<String, dynamic>.from(e);
                   return <String, dynamic>{};
                 })
                 .where((m) => m.isNotEmpty)
