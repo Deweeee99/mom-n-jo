@@ -18,6 +18,8 @@ dependencies:
   intl: ^0.17.0
   salomon_bottom_bar: ^3.3.1
   cupertino_icons: ^1.0.8
+  geolocator: ^14.0.2
+  geocoding: ^4.0.0
   # flutter_app_badger: 1.2.0
 
 dev_dependencies:

@@ -69,18 +69,18 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
 
   // Lifecycle handler: schedule auto-logout on background/inactive/detached (debounced)
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached) {
-      _autoLogoutTimer?.cancel();
-      _autoLogoutTimer = Timer(const Duration(seconds: 1), () {
-        _forceLogoutOnReload();
-      });
-    } else if (state == AppLifecycleState.resumed) {
-      _autoLogoutTimer?.cancel();
-    }
-  }
+  // void didChangeAppLifecycleState(AppLifecycleState state) {
+  //   if (state == AppLifecycleState.inactive ||
+  //       state == AppLifecycleState.paused ||
+  //       state == AppLifecycleState.detached) {
+  //     _autoLogoutTimer?.cancel();
+  //     _autoLogoutTimer = Timer(const Duration(seconds: 1), () {
+  //       _forceLogoutOnReload();
+  //     });
+  //   } else if (state == AppLifecycleState.resumed) {
+  //     _autoLogoutTimer?.cancel();
+  //   }
+  // }
 
   Future<void> _forceLogoutOnReload() async {
     if (!mounted) return;
