@@ -137,229 +137,364 @@ class _DaftarScreenState extends State<DaftarScreen> {
     super.dispose();
   }
 
+  // MULAI DARI SINI UI-NYA UDAH DI-REDESIGN ALAMI EFEK 3D
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF5E6E0), Color(0xFFFEF9F5)],
+      body: Stack(
+        children: [
+          // BACKGROUND IMAGE SECTION
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/images/bg_login.png'), // Pake background yang sama kaya login
+                fit: BoxFit.cover,
+              ),
+            ),
           ),
-        ),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                // Logo Section
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.3),
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                      )
-                    ],
-                  ),
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    height: 100,
+          
+          // CONTENT SECTION
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Icon Avatar 3D Style
+                  Container(
                     width: 100,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.account_circle,
-                      size: 80,
-                      color: Color(0xFFD4B89C),
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 15,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: 60,
+                        height: 60,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFD5BAA4), // Warna coklat avatar
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.person,
+                          size: 40,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 40),
+                  const SizedBox(height: 30),
 
-                // Registration Form Card
-                Card(
-                  elevation: 8,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Padding(
+                  // Card Putih untuk Form Register
+                  Container(
                     padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.95), // Sedikit transparan
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 25,
+                          spreadRadius: 5,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
                     child: Column(
                       children: [
-                        // Fullname Field
-                        TextFormField(
-                          controller: _fullnameController,
-                          decoration: InputDecoration(
-                            prefixIcon: const Icon(Icons.person,
-                                color: Color(0xFFD4B89C)),
-                            labelText: 'Nama Lengkap',
-                            labelStyle: const TextStyle(color: Colors.grey),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide.none,
+                        // Field Nama Lengkap
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.15),
+                                blurRadius: 10,
+                                spreadRadius: 1,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: TextFormField(
+                            controller: _fullnameController,
+                            style: const TextStyle(color: Colors.black87),
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(
+                                Icons.person_outline,
+                                color: Color(0xFFB5937B),
+                                size: 22,
+                              ),
+                              hintText: 'Nama Lengkap',
+                              hintStyle: TextStyle(
+                                color: Colors.black54,
+                                fontSize: 14,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(vertical: 18),
                             ),
-                            filled: true,
-                            fillColor: Colors.grey.withOpacity(0.1),
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        // Nickname Field
-                        TextFormField(
-                          controller: _nicknameController,
-                          decoration: InputDecoration(
-                            prefixIcon: const Icon(Icons.person_outline,
-                                color: Color(0xFFD4B89C)),
-                            labelText: 'Nama Panggilan (opsional)',
-                            labelStyle: const TextStyle(color: Colors.grey),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide.none,
+                        const SizedBox(height: 16),
+
+                        // Field Nama Panggilan
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.15),
+                                blurRadius: 10,
+                                spreadRadius: 1,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: TextFormField(
+                            controller: _nicknameController,
+                            style: const TextStyle(color: Colors.black87),
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(
+                                Icons.person_outline,
+                                color: Color(0xFFB5937B),
+                                size: 22,
+                              ),
+                              hintText: 'Nama Panggilan',
+                              hintStyle: TextStyle(
+                                color: Colors.black54,
+                                fontSize: 14,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(vertical: 18),
                             ),
-                            filled: true,
-                            fillColor: Colors.grey.withOpacity(0.1),
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        // Mobile Number Field
-                        TextFormField(
-                          controller: _mobileController,
-                          keyboardType: TextInputType.phone,
-                          decoration: InputDecoration(
-                            prefixIcon: const Icon(Icons.phone_android,
-                                color: Color(0xFFD4B89C)),
-                            labelText: 'Nomor Handphone',
-                            hintText: '+628888888',
-                            labelStyle: const TextStyle(color: Colors.grey),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide.none,
+                        const SizedBox(height: 16),
+
+                        // Field Nomor Handphone
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.15),
+                                blurRadius: 10,
+                                spreadRadius: 1,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: TextFormField(
+                            controller: _mobileController,
+                            keyboardType: TextInputType.phone,
+                            style: const TextStyle(color: Colors.black87),
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(
+                                Icons.phone_android_outlined,
+                                color: Color(0xFFB5937B),
+                                size: 22,
+                              ),
+                              hintText: 'Nomor Handphone',
+                              hintStyle: TextStyle(
+                                color: Colors.black54,
+                                fontSize: 14,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(vertical: 18),
                             ),
-                            filled: true,
-                            fillColor: Colors.grey.withOpacity(0.1),
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        // Email Field
-                        TextFormField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: InputDecoration(
-                            prefixIcon: const Icon(Icons.email,
-                                color: Color(0xFFD4B89C)),
-                            labelText: 'Email',
-                            hintText: 'Password akan dikirim melalui Email',
-                            labelStyle: const TextStyle(color: Colors.grey),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide.none,
+                        const SizedBox(height: 16),
+
+                        // Field Email
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.15),
+                                blurRadius: 10,
+                                spreadRadius: 1,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: TextFormField(
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            style: const TextStyle(color: Colors.black87),
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(
+                                Icons.email_outlined,
+                                color: Color(0xFFB5937B),
+                                size: 22,
+                              ),
+                              hintText: 'Email',
+                              hintStyle: TextStyle(
+                                color: Colors.black54,
+                                fontSize: 14,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(vertical: 18),
                             ),
-                            filled: true,
-                            fillColor: Colors.grey.withOpacity(0.1),
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
 
                         // Gerai Dropdown
-                        DropdownButtonFormField<String>(
-                          value: _selectedGeraiId,
-                          items: _geraiList.isNotEmpty
-                              ? _geraiList
-                                  .map<DropdownMenuItem<String>>((item) {
-                                  return DropdownMenuItem<String>(
-                                    value: item['id_gerai'].toString(),
-                                    child: Text(item['nama_gerai'] ?? '-'),
-                                  );
-                                }).toList()
-                              : [
-                                  const DropdownMenuItem<String>(
-                                    value: null,
-                                    child: Text('Tidak ada gerai'),
-                                  )
-                                ],
-                          decoration: InputDecoration(
-                            prefixIcon: const Icon(Icons.store,
-                                color: Color(0xFFD4B89C)),
-                            labelText: 'Pilih Gerai',
-                            labelStyle: const TextStyle(color: Colors.grey),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide.none,
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey.withOpacity(0.1),
-                          ),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedGeraiId = value;
-                            });
-                          },
-                          hint: const Text('Pilih Gerai'),
-                        ),
-                        const SizedBox(height: 24),
-                        // Register Button
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _register,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFD4B89C),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.15),
+                                blurRadius: 10,
+                                spreadRadius: 1,
+                                offset: const Offset(0, 4),
                               ),
-                              elevation: 3,
+                            ],
+                          ),
+                          child: DropdownButtonFormField<String>(
+                            value: _selectedGeraiId,
+                            icon: const Icon(
+                              Icons.arrow_drop_down,
+                              color: Color(0xFFB5937B),
                             ),
-                            child: _isLoading
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
+                            items: _geraiList.isNotEmpty
+                                ? _geraiList.map<DropdownMenuItem<String>>((item) {
+                                    return DropdownMenuItem<String>(
+                                      value: item['id_gerai'].toString(),
+                                      child: Text(item['nama_gerai'] ?? '-'),
+                                    );
+                                  }).toList()
+                                : [
+                                    const DropdownMenuItem<String>(
+                                      value: null,
+                                      child: Text('Tidak ada gerai'),
+                                    )
+                                  ],
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(
+                                Icons.store_outlined,
+                                color: Color(0xFFB5937B),
+                                size: 22,
+                              ),
+                              hintText: 'Pilih Gerai',
+                              hintStyle: TextStyle(
+                                color: Colors.black54,
+                                fontSize: 14,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                            ),
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedGeraiId = value;
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+
+                        // Register Button (Gradient + Shadow)
+                        InkWell(
+                          onTap: _isLoading ? null : _register,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 18),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFDEBC9E), Color(0xFFC8A386)],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFC8A386).withOpacity(0.5),
+                                  blurRadius: 12,
+                                  spreadRadius: 2,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'DAFTAR',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.5,
+                                      ),
                                     ),
-                                  )
-                                : const Text(
-                                    'DAFTAR',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                // Link kembali ke halaman Login
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('Sudah punya akun? '),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      child: const Text(
-                        'Masuk',
+
+                  const SizedBox(height: 30),
+
+                  // Link kembali ke halaman Login
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Sudah punya akun?',
                         style: TextStyle(
-                          color: Color(0xFFD4B89C),
-                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                          fontSize: 14,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 6),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pop(context);
+                        },
+                        child: const Text(
+                          'Masuk',
+                          style: TextStyle(
+                            color: Color(0xFF9A7B63),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20), // Biar ga terlalu mepet bawah kalo di scroll
+                ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

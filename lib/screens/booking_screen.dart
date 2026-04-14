@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
 
 /// ===================
 /// HELPERS & WIDGET LOADING
@@ -15,14 +14,12 @@ void navigateWithLoading(
   bool replace = false,
   Duration delay = const Duration(milliseconds: 300),
 }) {
-  // Tampilkan dialog loading
   showDialog(
     context: context,
     barrierDismissible: false,
     builder: (context) => const LoadingDialog(),
   );
 
-  // Setelah delay, hapus dialog dan lakukan navigasi.
   Future.delayed(delay, () {
     Navigator.pop(context); // Hapus loading dialog
     if (replace) {
@@ -35,12 +32,11 @@ void navigateWithLoading(
 
 /// Widget dialog yang menampilkan animasi loading hourglass.
 class LoadingDialog extends StatelessWidget {
-  const LoadingDialog({Key? key}) : super(key: key);
+  const LoadingDialog({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Menggunakan Center agar loading berada di tengah layar.
-    return Center(
+    return const Center(
       child: HourglassLoading(),
     );
   }
@@ -48,16 +44,15 @@ class LoadingDialog extends StatelessWidget {
 
 /// Widget custom untuk menampilkan animasi loading hourglass.
 class HourglassLoading extends StatefulWidget {
-  const HourglassLoading({Key? key}) : super(key: key);
+  const HourglassLoading({super.key});
 
   @override
-  _HourglassLoadingState createState() => _HourglassLoadingState();
+  State<HourglassLoading> createState() => _HourglassLoadingState();
 }
 
 class _HourglassLoadingState extends State<HourglassLoading>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  // Animasi rotasi dari 0 hingga 180 derajat (0.0 - 0.5 putaran, karena 1.0 = 360°)
   late Animation<double> _animation;
 
   @override
@@ -83,17 +78,16 @@ class _HourglassLoadingState extends State<HourglassLoading>
     return Container(
       width: 130,
       height: 130,
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 71, 60, 60),
+      decoration: const BoxDecoration(
+        color: Color.fromARGB(255, 71, 60, 60),
         shape: BoxShape.circle,
       ),
       child: Center(
         child: RotationTransition(
           turns: _animation,
-          child: Container(
+          child: SizedBox(
             width: 50,
             height: 70,
-            // Gambar hourglass sederhana dengan CustomPaint
             child: CustomPaint(
               painter: HourglassPainter(),
             ),
@@ -104,7 +98,6 @@ class _HourglassLoadingState extends State<HourglassLoading>
   }
 }
 
-/// CustomPainter untuk menggambar bentuk hourglass sederhana.
 class HourglassPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -112,7 +105,6 @@ class HourglassPainter extends CustomPainter {
       ..color = Colors.grey.shade400
       ..style = PaintingStyle.fill;
 
-    // Gambar bagian atas hourglass
     Path topPath = Path();
     topPath.moveTo(0, 0);
     topPath.quadraticBezierTo(size.width / 2, size.height * 0.5, size.width, 0);
@@ -122,7 +114,6 @@ class HourglassPainter extends CustomPainter {
     topPath.close();
     canvas.drawPath(topPath, paint);
 
-    // Gambar bagian bawah hourglass
     Path bottomPath = Path();
     bottomPath.moveTo(0, size.height * 0.5);
     bottomPath.quadraticBezierTo(
@@ -152,10 +143,10 @@ class BookingScreen extends StatefulWidget {
 class _BookingScreenState extends State<BookingScreen> {
   String? _idCustomer;
   bool _isLoggedIn = false;
-  // Setelah menghapus item Booking dari bottom nav, index Gift = 1
-  final int _currentIndex = 1;
-  final Color _primaryColor = const Color(0xFF9B5D4C);
-  final Color _accentColor = const Color(0xFFD4B89C);
+  
+  // Update warna menyesuaikan tema baru Tuan
+  final Color _primaryColor = const Color(0xFF693D2C); // Coklat tua khas Momnjo
+  final Color _accentColor = const Color(0xFFDEBC9E); // Peach gradient
 
   @override
   void initState() {
@@ -171,270 +162,278 @@ class _BookingScreenState extends State<BookingScreen> {
     });
   }
 
-  /// Navigasi bottom bar menggunakan loading animation.
-  void _navigateToScreen(BuildContext context, int index) {
-    if (index == _currentIndex) return;
-
-    // Routes disesuaikan tanpa '/booking'
-    final routes = [
-      '/home',
-      '/booking',
-      '/gift',
-      '/voucher',
-      '/profile',
-    ];
-
-    if (index >= 0 && index < routes.length) {
-      navigateWithLoading(context, routes[index]);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return _isLoggedIn ? _buildAuthenticatedUI() : _buildUnauthenticatedUI();
+    // Karena dipanggil di dalam Home (Shell), kita nggak pake bottomNavigationBar lagi di sini.
+    return Scaffold(
+      backgroundColor: const Color(0xFFFDF8F4), // Tema peach muda
+      body: _isLoggedIn ? _buildAuthenticatedUI() : _buildUnauthenticatedUI(),
+    );
   }
 
+  /// TAMPILAN JIKA BELUM LOGIN
   Widget _buildUnauthenticatedUI() {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF5E6E0), Color(0xFFFEF9F5)],
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Container(
+          padding: const EdgeInsets.all(30),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 20,
+                spreadRadius: 2,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-        ),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  'assets/images/auth_required.png',
-                  height: 200,
-                  errorBuilder: (context, error, stackTrace) => Icon(
-                    Icons.lock_person,
-                    size: 150,
-                    color: _primaryColor.withOpacity(0.8),
-                  ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Icon Lock Estetik
+              Container(
+                width: 100,
+                height: 100,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF9EAE1),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 30),
-                Text(
-                  'Akses Booking',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: _primaryColor,
-                  ),
+                child: Icon(
+                  Icons.lock_outline_rounded,
+                  size: 50,
+                  color: _primaryColor,
                 ),
-                const SizedBox(height: 15),
-                const Text(
-                  'Silakan login terlebih dahulu untuk melakukan booking',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black54,
-                  ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Akses Booking',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  color: _primaryColor,
+                  fontFamily: 'serif',
                 ),
-                const SizedBox(height: 30),
-                SizedBox(
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Silakan login terlebih dahulu untuk melakukan booking treatment favorit Anda.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.black54,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 32),
+              
+              // Tombol Login
+              InkWell(
+                onTap: () => navigateWithLoading(context, '/login'),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
                   width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => navigateWithLoading(context, '/login'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _primaryColor,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 3,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFDEBC9E), Color(0xFFC8A386)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
                     ),
-                    child: const Text(
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFC8A386).withOpacity(0.4),
+                        blurRadius: 10,
+                        spreadRadius: 1,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Text(
                       'Login Sekarang',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
+                        letterSpacing: 1.0,
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 
+  /// TAMPILAN JIKA SUDAH LOGIN
   Widget _buildAuthenticatedUI() {
-    return Scaffold(
-      bottomNavigationBar: _buildBottomNavBar(),
-      body: Stack(
-        children: [
-          _buildBackground(),
-          _buildBookingCard(),
-        ],
-      ),
+    return Stack(
+      children: [
+        _buildBackground(),
+        Center(
+          child: SingleChildScrollView(
+            child: Container(
+              padding: const EdgeInsets.all(30),
+              margin: const EdgeInsets.symmetric(horizontal: 24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 25,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Icon Clipboard / History Estetik
+                  Container(
+                    width: 90,
+                    height: 90,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF9EAE1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.history_edu_rounded,
+                      size: 45,
+                      color: _primaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Booking History',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: _primaryColor,
+                      fontFamily: 'serif',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Lihat riwayat booking Anda atau mulai buat pesanan treatment baru sekarang.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.black54,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  
+                  // Tombol Primary (Booking Sekarang)
+                  InkWell(
+                    // Sementara arahin ke halaman kategori (Home) biar milih treatment dulu,
+                    // Nanti disesuaikan udah bikin alur input booking-nya
+                    onTap: () => navigateWithLoading(context, '/kategori'), 
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF9B5D4C), // Coklat bata yang premium
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF9B5D4C).withOpacity(0.3),
+                            blurRadius: 10,
+                            spreadRadius: 1,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.add_circle_outline, color: Colors.white, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Booking Sekarang',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Tombol Outline (Lihat History)
+                  _buildOutlineActionButton(
+                    text: 'Lihat History',
+                    icon: Icons.history,
+                    onPressed: _navigateToHistory,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildBackground() {
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            _primaryColor.withOpacity(0.2),
-            Colors.white.withOpacity(0.8)
-          ],
-        ),
-        image: const DecorationImage(
+      decoration: const BoxDecoration(
+        color: Color(0xFFFDF8F4), // Solid background menyesuaikan tema
+        image: DecorationImage(
           image: AssetImage('assets/bookbg.png'),
           fit: BoxFit.cover,
-          opacity: 0.3,
+          opacity: 0.15, // Dibuat lebih tipis biar nggak nabrak text
         ),
       ),
     );
   }
 
-  Widget _buildBookingCard() {
-    return Center(
-      child: SingleChildScrollView(
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          margin: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 20,
-                spreadRadius: 5,
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.assignment_outlined,
-                  size: 60, color: Colors.black54),
-              const SizedBox(height: 20),
-              Text(
-                'Mulai Booking Anda',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: _primaryColor,
-                ),
-              ),
-              const SizedBox(height: 15),
-              Text(
-                'Dapatkan diskon Rp75.000 untuk booking pertama dengan mereferensikan aplikasi ini ke teman Anda',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[700],
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 30),
-              // Tombol "Booking Sekarang" dihilangkan sesuai permintaan
-              const SizedBox(height: 15),
-              _buildActionButton(
-                text: 'Lihat History',
-                icon: Icons.history,
-                onPressed: _navigateToHistory,
-                isPrimary: false,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
+  Widget _buildOutlineActionButton({
     required String text,
     required IconData icon,
     required Function() onPressed,
-    bool isPrimary = true,
   }) {
     return SizedBox(
       width: double.infinity,
-      child: ElevatedButton.icon(
-        icon: Icon(icon, color: isPrimary ? Colors.white : _primaryColor),
+      child: OutlinedButton.icon(
+        icon: Icon(icon, color: _primaryColor, size: 20),
         label: Text(
           text,
           style: TextStyle(
-            fontSize: 16,
-            color: isPrimary ? Colors.white : _primaryColor,
+            fontSize: 15,
+            color: _primaryColor,
             fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
           ),
         ),
         onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isPrimary ? _primaryColor : Colors.transparent,
+        style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          side: BorderSide(color: _primaryColor, width: 1.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side:
-                isPrimary ? BorderSide.none : BorderSide(color: _primaryColor),
           ),
-          elevation: isPrimary ? 3 : 0,
         ),
       ),
     );
   }
 
-  Widget _buildBottomNavBar() {
-    return Container(
-      decoration: BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            blurRadius: 10,
-            spreadRadius: 2,
-          )
-        ],
-      ),
-      child: SalomonBottomBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => _navigateToScreen(context, index),
-        selectedItemColor: _primaryColor,
-        unselectedItemColor: Colors.grey,
-        items: [
-          SalomonBottomBarItem(
-            icon: const Icon(Icons.home),
-            title: const Text("Home"),
-          ),
-          // Booking item dihapus
-          SalomonBottomBarItem(
-            icon: const Icon(Icons.calendar_today_outlined),
-            title: const Text("Booking"),
-          ),
-          SalomonBottomBarItem(
-            icon: const Icon(Icons.card_giftcard_outlined),
-            title: const Text("Gift"),
-          ),
-          SalomonBottomBarItem(
-            icon: const Icon(Icons.confirmation_number_outlined),
-            title: const Text("Voucher"),
-          ),
-          SalomonBottomBarItem(
-            icon: const Icon(Icons.person_outline),
-            title: const Text("Profile"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Navigasi ke history booking menggunakan loading animation.
   void _navigateToHistory() {
     Navigator.pushNamed(context, '/history', arguments: _idCustomer);
   }

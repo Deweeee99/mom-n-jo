@@ -21,10 +21,10 @@ class SubcategoryScreen extends StatefulWidget {
   final Map<String, dynamic>? bookingData;
 
   const SubcategoryScreen({
-    Key? key,
+    super.key,
     required this.categoryId,
     this.bookingData,
-  }) : super(key: key);
+  });
 
   @override
   State<SubcategoryScreen> createState() => _SubcategoryScreenState();
@@ -32,6 +32,11 @@ class SubcategoryScreen extends StatefulWidget {
 
 class _SubcategoryScreenState extends State<SubcategoryScreen> {
   late Future<List<Subcategory>> _futureSubcategories;
+  
+  // Warna Tema Desain Baru
+  final Color _primaryColor = const Color(0xFF693D2C); // Coklat Tua
+  final Color _bgColor = const Color(0xFFFDF8F4); // Peach Muda Background
+  final Color _iconBgColor = const Color(0xFFF5E6E0); // Warna alas ikon
 
   @override
   void initState() {
@@ -58,57 +63,145 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: _bgColor,
+      // extendBodyBehindAppBar dihapus biar header punya ruang sendiri (default)
       appBar: AppBar(
-        title: const Text('Pilih Sub-Kategori'),
-        backgroundColor: const Color(0xFFAA6939),
+        backgroundColor: const Color(0xFFEAD8C0), // Warna lebih tebal dari background biar ga nyaru
+        elevation: 2, // Dikasih bayangan tipis biar kepisah dari body
+        shadowColor: Colors.black26,
+        centerTitle: true,
+        iconTheme: IconThemeData(color: _primaryColor), // Tombol back warna coklat
+        title: Text(
+          'Pilih Sub-Kategori', // Dibalikin ke default
+          style: TextStyle(
+            color: _primaryColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
       ),
-      body: FutureBuilder<List<Subcategory>>(
-        future: _futureSubcategories,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(color: Color(0xFFAA6939)),
-            );
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('Tidak ada sub-kategori'));
-          }
-          final subcategories = snapshot.data!;
-          return ListView.builder(
-            itemCount: subcategories.length,
-            itemBuilder: (context, index) {
-              final subcat = subcategories[index];
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: ListTile(
-                  title: Text(
-                    subcat.namaSubkategori,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFAA6939),
+      body: Stack(
+        children: [
+          // Background Tipis (Biar seragam sama halaman sebelumnya)
+          Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/bookbg.png'), // Sesuaikan nama file lu
+                fit: BoxFit.cover,
+                opacity: 0.15,
+              ),
+            ),
+          ),
+
+          // Konten List SubKategori
+          SafeArea(
+            child: FutureBuilder<List<Subcategory>>(
+              future: _futureSubcategories,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(
+                    child: CircularProgressIndicator(color: _primaryColor),
+                  );
+                } else if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Error: ${snapshot.error}',
+                      style: TextStyle(color: _primaryColor),
                     ),
-                  ),
-                  trailing: const Icon(
-                    Icons.arrow_forward_ios,
-                    color: Color(0xFFAA6939),
-                  ),
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      '/booking_treatment',
-                      arguments: {
-                        'subcategoryId': int.parse(subcat.idSubKat),
-                        'subcategoryName': subcat.namaSubkategori,
-                        'bookingData': widget.bookingData,
-                      },
+                  );
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'Tidak ada sub-kategori',
+                      style: TextStyle(color: _primaryColor, fontSize: 16),
+                    ),
+                  );
+                }
+                
+                final subcategories = snapshot.data!;
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  itemCount: subcategories.length,
+                  itemBuilder: (context, index) {
+                    final subcat = subcategories[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            '/booking_treatment',
+                            arguments: {
+                              'subcategoryId': int.parse(subcat.idSubKat),
+                              'subcategoryName': subcat.namaSubkategori,
+                              'bookingData': widget.bookingData,
+                            },
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20), // Melengkung pil
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 15,
+                                spreadRadius: 2,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              // Ikon di kiri (Gaya Desain)
+                              Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: _iconBgColor,
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Icon(
+                                  // Ikon default karena dari API nggak ada gambar
+                                  Icons.spa_outlined, 
+                                  color: _primaryColor,
+                                  size: 26,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              
+                              // Teks Subkategori
+                              Expanded(
+                                child: Text(
+                                  subcat.namaSubkategori,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: _primaryColor,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ),
+                              
+                              // Arrow ke kanan
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                color: _primaryColor,
+                                size: 28,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     );
                   },
-                ),
-              );
-            },
-          );
-        },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

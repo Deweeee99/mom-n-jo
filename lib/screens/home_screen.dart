@@ -2,9 +2,15 @@ import 'dart:convert';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
+import 'package:salomon_bottom_bar/salomon_bottom_bar.dart'; // <-- Package animasi kita balikin!
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+// Import halaman lain biar bisa dipanggil di dalam body tanpa pindah rute
+import 'booking_screen.dart';
+import 'gift_screen.dart';
+import 'voucher_screen.dart';
+import 'profile_screen.dart';
 
 /// Model Branch
 class Branch {
@@ -50,7 +56,7 @@ Future<void> _launchURL(String url) async {
   }
 }
 
-/// Fungsi navigasi dengan loading
+/// Fungsi navigasi dengan loading (Kita pake ini lagi biar ga double footer)
 void navigateWithLoading(BuildContext context, String routeName,
     {Object? arguments, bool replace = false}) {
   showDialog(
@@ -109,8 +115,8 @@ class _HourglassLoadingState extends State<HourglassLoading>
     return Container(
       width: 130,
       height: 130,
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 71, 60, 60),
+      decoration: const BoxDecoration(
+        color: Color.fromARGB(255, 71, 60, 60),
         shape: BoxShape.circle,
       ),
       child: Center(
@@ -175,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Branch> _branches = [];
   List<Category> _categories = [];
   int _currentIndex = 0;
-  int _notifCount = 0; // jumlah notifikasi
+  int _notifCount = 0;
 
   @override
   void initState() {
@@ -276,392 +282,484 @@ class _HomeScreenState extends State<HomeScreen> {
     navigateWithLoading(context, '/login', replace: true);
   }
 
-  void _navigateToScreen(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        break;
-      case 1:
-        navigateWithLoading(context, '/booking');
-        break;
-      case 2:
-        navigateWithLoading(context, '/gift');
-        break;
-
-      case 3:
-        navigateWithLoading(context, '/voucher');
-        break;
-      case 4:
-        navigateWithLoading(context, '/profile');
-        break;
-    }
+  // Widget bantuan untuk judul: Padding dikurangin abis-abisan biar mepet banget
+  Widget _buildSectionTitle(String imagePath, {bool showGirlIcon = false}) {
+    return Padding(
+      // Top 0 & Bottom 4 biar bener-bener rapat ke card di bawahnya
+      padding: const EdgeInsets.only(top: 0, bottom: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset(
+            imagePath,
+            height: 40, // Tinggi diturunin dikit biar keliatan rapet
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => const Text(
+              'Aset Gambar Hilang', 
+              style: TextStyle(color: Color(0xFF693D2C), fontWeight: FontWeight.bold),
+            ),
+          ),
+          
+          if (showGirlIcon) ...[
+            const SizedBox(width: 6),
+            Image.asset(
+              'assets/images/icon_perempuan.jpg',
+              width: 35, // Dikecilin proporsional
+              height: 35,
+              errorBuilder: (context, error, stackTrace) => const Icon(Icons.face_retouching_natural, color: Color(0xFF8B9A76), size: 26),
+            )
+          ],
+        ],
+      ),
+    );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black12, blurRadius: 4, offset: Offset(0, -2))
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: SalomonBottomBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-            _navigateToScreen(context, index);
-          },
-          items: [
-            SalomonBottomBarItem(
-                icon: const Icon(Icons.home),
-                title: const Text("Home"),
-                selectedColor: const Color(0xFF693D2C)),
-            SalomonBottomBarItem(
-                icon: const Icon(Icons.calendar_today_outlined),
-                title: const Text("Booking"),
-                selectedColor: const Color(0xFF693D2C)),
-            SalomonBottomBarItem(
-                icon: const Icon(Icons.card_giftcard_outlined),
-                title: const Text("Gift"),
-                selectedColor: const Color(0xFF693D2C)),
-            // Gift
-            SalomonBottomBarItem(
-                icon: const Icon(Icons.confirmation_number_outlined),
-                title: const Text("Voucher"),
-                selectedColor: const Color(0xFF693D2C)),
-            SalomonBottomBarItem(
-                icon: const Icon(Icons.person_outline),
-                title: const Text("Profile"),
-                selectedColor: const Color(0xFF693D2C)),
-          ],
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFFD4B89C), Color(0xFF693D2C)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+  // FUNGSI INI ADALAH BODY UTAMA UNTUK HOME
+  Widget _buildHomeBody() {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                height: 250,
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(30),
+                    bottomRight: Radius.circular(30),
+                  ),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFFA67C65), 
+                      Color(0xFF693D2C), 
+                    ],
+                  ),
                 ),
-                borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(24),
-                    bottomRight: Radius.circular(24)),
               ),
-              child: SafeArea(
+
+              SafeArea(
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Image.asset('assets/momnjo_logo.png', height: 60),
-                        Stack(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.notifications_outlined,
-                                  color: Colors.white),
-                              onPressed: () {
-                                Navigator.pushNamed(
-                                    context, '/ListNotifScreen');
-                              },
-                            ),
-                            if (_notifCount > 0)
-                              Positioned(
-                                right: 8,
-                                top: 8,
-                                child: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.red,
-                                    shape: BoxShape.circle,
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 5), // Bawah dikurangin
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Image.asset(
+                            'assets/images/logo_momnjo.png', 
+                            height: 40,
+                            errorBuilder: (context, error, stackTrace) => const Text('mom n jo', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+                          ),
+                          Row(
+                            children: [
+                              Stack(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.notifications_outlined, color: Colors.white, size: 28),
+                                    onPressed: () {
+                                      Navigator.pushNamed(context, '/ListNotifScreen');
+                                    },
                                   ),
-                                  constraints: const BoxConstraints(
-                                    minWidth: 16,
-                                    minHeight: 16,
-                                  ),
-                                  child: Text(
-                                    '$_notifCount',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
+                                  if (_notifCount > 0)
+                                    Positioned(
+                                      right: 8,
+                                      top: 8,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFB5937B), 
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: Colors.white, width: 1.5),
+                                        ),
+                                        constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                                        child: Text(
+                                          '$_notifCount',
+                                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
                                     ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
+                                ],
                               ),
+                              IconButton(
+                                icon: const Icon(Icons.search, color: Colors.white, size: 28),
+                                onPressed: () {
+                                  // Aksi pencarian
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _isLoggedIn ? 'Hi, $_fullname!' : 'Hi, Mom!',
+                            style: const TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 2), // Rapatkan ke subtitle
+                          const Text(
+                            'How can we help you today?',
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 15), // Dikecilin biar banner naik
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 15,
+                              offset: const Offset(0, 8),
+                            )
                           ],
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 4),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(_isLoggedIn ? 'Hi, $_fullname!' : 'Hi, Mom!',
-                                style: const TextStyle(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white)),
-                            const SizedBox(height: 4),
-                            const Text('How can we help you today?',
-                                style: TextStyle(
-                                    fontSize: 16, color: Colors.white70)),
-                          ],
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: CarouselSlider(
+                            items: banners.map((banner) {
+                              return Image.asset(
+                                banner,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Container(
+                                  color: Colors.grey[300],
+                                  child: const Center(child: Icon(Icons.image, size: 50, color: Colors.grey)),
+                                ),
+                              );
+                            }).toList(),
+                            options: CarouselOptions(
+                              height: 180,
+                              autoPlay: true,
+                              autoPlayInterval: const Duration(seconds: 4),
+                              enlargeCenterPage: false,
+                              viewportFraction: 1.0,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 6,
-                          offset: const Offset(0, 3))
-                    ],
-                  ),
-                  child: CarouselSlider(
-                    items: banners
-                        .map((banner) => Image.asset(banner,
-                            width: double.infinity, fit: BoxFit.cover))
-                        .toList(),
-                    options: CarouselOptions(
-                        height: 220,
-                        autoPlay: true,
-                        autoPlayInterval: const Duration(seconds: 3),
-                        enlargeCenterPage: false,
-                        aspectRatio: 16 / 9,
-                        viewportFraction: 1.0),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 6,
-                          offset: const Offset(0, 3))
-                    ],
-                  ),
-                  child: Image.asset('assets/promo.png',
-                      width: double.infinity, fit: BoxFit.cover),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-              child: SizedBox(
-                height: 70,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.asset('assets/txt-branches.png',
-                      width: 190,
-                      height: 70,
-                      alignment: Alignment.center,
-                      fit: BoxFit.contain),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: _branches.isEmpty
-                  ? const Center(
-                      child:
-                          CircularProgressIndicator(color: Color(0xFF693D2C)))
-                  : CarouselSlider.builder(
-                      itemCount: _branches.length,
-                      itemBuilder:
-                          (BuildContext context, int index, int realIndex) {
-                        final branch = _branches[index];
-                        int branchId = int.tryParse(branch.id) ?? 0;
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                          child: GestureDetector(
-                            onTap: () {
-                              navigateWithLoading(context, '/gerai_screen',
-                                  arguments: branchId);
-                            },
-                            child: Card(
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                              elevation: 4,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: const BorderRadius.only(
-                                        topLeft: Radius.circular(12),
-                                        topRight: Radius.circular(12)),
-                                    child: Image.asset('assets/darmawangsa.png',
-                                        fit: BoxFit.cover, height: 110),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8),
-                                    child: Text(branch.name,
-                                        style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF693D2C))),
-                                  ),
-                                  const SizedBox(height: 8),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                      options: CarouselOptions(
-                          height: 190,
-                          enlargeCenterPage: true,
-                          enableInfiniteScroll: true,
-                          autoPlay: true,
-                          scrollPhysics: const BouncingScrollPhysics()),
+            ],
+          ),
+          
+          const SizedBox(height: 8), // Sedikit jarak dari banner atas ke judul
+
+          _buildSectionTitle('assets/txt-recommended-service.png', showGirlIcon: true),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: _categories.isEmpty
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFF693D2C)))
+                : GridView.builder(
+                    itemCount: _categories.length,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 12, // Dikecilin biar antar card makin deket
+                      childAspectRatio: 0.85, 
                     ),
-            ),
-            const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-              child: SizedBox(
-                height: 70,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.asset('assets/txt-recommended-service.png',
-                      width: 250,
-                      height: 70,
-                      alignment: Alignment.center,
-                      fit: BoxFit.contain),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _categories.isEmpty
-                  ? const Center(
-                      child:
-                          CircularProgressIndicator(color: Color(0xFF693D2C)))
-                  : GridView.builder(
-                      itemCount: _categories.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 0.8,
-                      ),
-                      itemBuilder: (BuildContext context, int index) {
-                        final category = _categories[index];
-                        final baseUrl =
-                            'https://app.momnjo.com/assets/foto_kategori/';
-                        final fullImageUrl = '$baseUrl${category.image}';
-                        return GestureDetector(
-                          onTap: () {
-                            final categoryId =
-                                int.tryParse(category.id.toString()) ?? 0;
-                            navigateWithLoading(context, '/subcategory',
-                                arguments: {
-                                  'categoryId': categoryId,
-                                  'bookingData': null,
-                                });
-                          },
-                          child: Card(
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                            elevation: 4,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                ClipRRect(
-                                  borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(12),
-                                      topRight: Radius.circular(12)),
+                    itemBuilder: (BuildContext context, int index) {
+                      final category = _categories[index];
+                      final baseUrl = 'https://app.momnjo.com/assets/foto_kategori/';
+                      final fullImageUrl = '$baseUrl${category.image}';
+                      
+                      return GestureDetector(
+                        onTap: () {
+                          final categoryId = int.tryParse(category.id.toString()) ?? 0;
+                          navigateWithLoading(context, '/subcategory', arguments: {
+                            'categoryId': categoryId,
+                            'bookingData': null,
+                          });
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 10,
+                                spreadRadius: 2,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                                   child: Image.network(
                                     fullImageUrl,
                                     fit: BoxFit.cover,
-                                    height: 130,
                                     errorBuilder: (context, error, stackTrace) {
                                       return Container(
-                                        height: 130,
-                                        color: Colors.grey[300],
-                                        child:
-                                            const Icon(Icons.image, size: 50),
+                                        color: Colors.grey[200],
+                                        child: const Icon(Icons.spa_outlined, size: 40, color: Color(0xFFB5937B)),
                                       );
                                     },
                                   ),
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text(category.name,
-                                      style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF693D2C)),
-                                      textAlign: TextAlign.center),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), // Margin text di card dipres
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(6),
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFFF9EAE1),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.face_retouching_natural, color: Color(0xFFB5937B), size: 18),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          category.name.toUpperCase(),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF693D2C),
+                                            height: 1.2,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const Icon(Icons.chevron_right, color: Colors.grey, size: 16),
+                                    ],
+                                  ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        );
-                      },
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                    ),
-            ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 6,
-                          offset: const Offset(0, 3)),
-                    ],
+                        ),
+                      );
+                    },
                   ),
-                  child: Image.asset('assets/home-service.png',
-                      width: double.infinity, fit: BoxFit.cover),
+          ),
+          
+          const SizedBox(height: 5), // Sangat rapat
+
+          _buildSectionTitle('assets/txt-branches.png', showGirlIcon: false),
+
+          Padding(
+            padding: const EdgeInsets.only(bottom: 0), // Pangkas habis
+            child: _branches.isEmpty
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFF693D2C)))
+                : CarouselSlider.builder(
+                    itemCount: _branches.length,
+                    itemBuilder: (BuildContext context, int index, int realIndex) {
+                      final branch = _branches[index];
+                      int branchId = int.tryParse(branch.id) ?? 0;
+                      return GestureDetector(
+                        onTap: () {
+                          navigateWithLoading(context, '/gerai_screen', arguments: branchId);
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6), // Vertical dikecilin banget
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.06),
+                                blurRadius: 15,
+                                spreadRadius: 2,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                                  child: Image.asset(
+                                    'assets/darmawangsa.png', 
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[300]),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 1,
+                                child: Container(
+                                  alignment: Alignment.centerLeft, 
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  child: Text(
+                                    branch.name,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF693D2C),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                    options: CarouselOptions(
+                      height: 180, // Tinggi slider dikurangin dikit
+                      enlargeCenterPage: true,
+                      enableInfiniteScroll: true,
+                      autoPlay: true,
+                      viewportFraction: 0.75, 
+                      scrollPhysics: const BouncingScrollPhysics(),
+                    ),
+                  ),
+          ),
+
+          const SizedBox(height: 5), // Sangat rapat
+
+          _buildSectionTitle('assets/txt-home-service.png', showGirlIcon: true),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 15,
+                    offset: const Offset(0, 8),
+                  )
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.asset(
+                  'assets/home-service.png',
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: 120,
+                    color: const Color(0xFFDEBC9E),
+                    child: const Center(child: Text("HOME SERVICE Banner", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 32),
+          ),
+          
+          // Ganjelan masih disisakan biar ga mentok footer yang melar
+          const SizedBox(height: 120), 
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // List halaman untuk navigasi internal (Shell)
+    // Pastikan kelas-kelas ini (BookingScreen, dkk) beneran ada dari import di atas.
+    final List<Widget> pages = [
+      _buildHomeBody(),         // Index 0: Tampilan Utama Home
+      const BookingScreen(),    // Index 1: Schedule
+      const GiftScreen(),       // Index 2: Package
+      const VoucherScreen(),    // Index 3: Ticket
+      const ProfileScreen(),    // Index 4: Profile
+    ];
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFFDF8F4),
+      extendBody: true, 
+      // Footer kembali menggunakan SalomonBottomBar biar animasinya idup lagi
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            )
           ],
         ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          child: SalomonBottomBar(
+            currentIndex: _currentIndex,
+            onTap: (index) {
+              setState(() {
+                _currentIndex = index; // Cukup ganti index, nggak usah push route lagi!
+              });
+            },
+            selectedItemColor: const Color(0xFF693D2C),
+            unselectedItemColor: Colors.grey.shade600,
+            itemPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            items: [
+              SalomonBottomBarItem(
+                icon: const Icon(Icons.home_filled),
+                title: const Text("Home"),
+              ),
+              SalomonBottomBarItem(
+                icon: const Icon(Icons.calendar_today_outlined),
+                title: const Text("Schedule"), 
+              ),
+              SalomonBottomBarItem(
+                icon: const Icon(Icons.card_giftcard_outlined),
+                title: const Text("Package"), 
+              ),
+              SalomonBottomBarItem(
+                icon: const Icon(Icons.confirmation_number_outlined),
+                title: const Text("Ticket"), 
+              ),
+              SalomonBottomBarItem(
+                icon: const Icon(Icons.person_outline),
+                title: const Text("Profile"),
+              ),
+            ],
+          ),
+        ),
       ),
+      // Body sekarang dinamis berdasarkan indeks tab yang dipilih
+      body: pages[_currentIndex],
     );
   }
 }

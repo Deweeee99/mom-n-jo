@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Gunakan impor yang sesuai dengan struktur proyek Anda.
-// Contoh dengan impor relatif (jika login_screen.dart dan daftar_screen.dart berada di folder yang sama):
 import 'daftar_screen.dart';
 import 'forget_screen.dart';
 
@@ -21,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
+  // LOGIC LOGIN TETAP UTUH, NGGAK ADA YANG DIUBAH
   Future<void> _login() async {
     if (_mobileController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -84,148 +84,218 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // MULAI DARI SINI UI-NYA UDAH DI-REDESIGN SESUAI GAMBAR TUAN
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF5E6E0), Color(0xFFFEF9F5)],
+      body: Stack(
+        children: [
+          // BACKGROUND IMAGE SECTION (Pake gambar dari Tuan)
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/images/bg_login.png'), // Pastiin path-nya bener di pubspec.yaml
+                fit: BoxFit.cover, // Biar full nutupin layar
+              ),
+            ),
           ),
-        ),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Logo Section
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.3),
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                      )
-                    ],
-                  ),
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    height: 100,
+          
+          // CONTENT SECTION
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Icon Avatar 3D Style
+                  Container(
                     width: 100,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.account_circle,
-                      size: 80,
-                      color: Color(0xFFD4B89C),
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 15,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: 60,
+                        height: 60,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFD5BAA4), // Warna coklat avatar
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.person,
+                          size: 40,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 40),
+                  const SizedBox(height: 30),
 
-                // Login Form Card
-                Card(
-                  elevation: 8,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Padding(
+                  // Card Putih untuk Form
+                  Container(
                     padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.95), // Agak transparan dikit biar nyatu sama background
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 25,
+                          spreadRadius: 5,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
                     child: Column(
                       children: [
-                        // Mobile Number Field
-                        TextFormField(
-                          controller: _mobileController,
-                          keyboardType: TextInputType.phone,
-                          decoration: InputDecoration(
-                            prefixIcon: const Icon(
-                              Icons.phone_android,
-                              color: Color(0xFFD4B89C),
+                        // Field Nomor Handphone (DIUBAH BIAR LEBIH MENONJOL)
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.15),
+                                blurRadius: 10,
+                                spreadRadius: 1,
+                                offset: const Offset(0, 4), // Bikin bayangan ke bawah biar pop-up
+                              ),
+                            ],
+                          ),
+                          child: TextFormField(
+                            controller: _mobileController,
+                            keyboardType: TextInputType.phone,
+                            style: const TextStyle(color: Colors.black87),
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(
+                                Icons.phone_android_outlined,
+                                color: Color(0xFFB5937B),
+                                size: 22,
+                              ),
+                              hintText: 'Nomor Handphone',
+                              hintStyle: TextStyle(
+                                color: Colors.black54,
+                                fontSize: 14,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(vertical: 18),
                             ),
-                            labelText: 'Nomor Handphone',
-                            labelStyle: const TextStyle(color: Colors.grey),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide.none,
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey.withOpacity(0.1),
                           ),
                         ),
                         const SizedBox(height: 20),
 
-                        // Password Field
-                        TextFormField(
-                          controller: _passwordController,
-                          obscureText: _obscurePassword,
-                          decoration: InputDecoration(
-                            prefixIcon: const Icon(
-                              Icons.lock_outline,
-                              color: Color(0xFFD4B89C),
-                            ),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                                color: Colors.grey,
+                        // Field Password (DIUBAH BIAR LEBIH MENONJOL)
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.15),
+                                blurRadius: 10,
+                                spreadRadius: 1,
+                                offset: const Offset(0, 4), // Bikin bayangan ke bawah biar pop-up
                               ),
-                              onPressed: () => setState(
-                                  () => _obscurePassword = !_obscurePassword),
+                            ],
+                          ),
+                          child: TextFormField(
+                            controller: _passwordController,
+                            obscureText: _obscurePassword,
+                            style: const TextStyle(color: Colors.black87),
+                            decoration: InputDecoration(
+                              prefixIcon: const Icon(
+                                Icons.lock_outline,
+                                color: Color(0xFFB5937B),
+                                size: 22,
+                              ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                  color: const Color(0xFFB5937B),
+                                  size: 20,
+                                ),
+                                onPressed: () => setState(
+                                    () => _obscurePassword = !_obscurePassword),
+                              ),
+                              hintText: 'Password',
+                              hintStyle: const TextStyle(
+                                color: Colors.black54,
+                                fontSize: 14,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(vertical: 18),
                             ),
-                            labelText: 'Password',
-                            labelStyle: const TextStyle(color: Colors.grey),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide.none,
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey.withOpacity(0.1),
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 28),
 
-                        // Login Button
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _login,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFD4B89C),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                        // Button MASUK (Gradient + Shadow Lebih Strong)
+                        InkWell(
+                          onTap: _isLoading ? null : _login,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 18),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFDEBC9E), Color(0xFFC8A386)],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
                               ),
-                              elevation: 3,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFC8A386).withOpacity(0.5), // Shadow lebih gelap biar tebel
+                                  blurRadius: 12,
+                                  spreadRadius: 2,
+                                  offset: const Offset(0, 6), // Turunin offset biar makin 3D
+                                ),
+                              ],
                             ),
-                            child: _isLoading
-                                ? const CircularProgressIndicator(
-                                    color: Colors.white,
-                                  )
-                                : const Text(
-                                    'MASUK',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
+                            child: Center(
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'MASUK',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.5,
+                                      ),
                                     ),
-                                  ),
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
 
-                // Additional Options
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  child: TextButton(
+                  const SizedBox(height: 30),
+
+                  // Lupa Password
+                  TextButton(
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -236,42 +306,52 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: const Text(
                       'Lupa Password?',
                       style: TextStyle(
-                        color: Color(0xFFD4B89C),
+                        color: Color(0xFF9A7B63),
                         fontWeight: FontWeight.w600,
+                        fontSize: 14,
                       ),
                     ),
                   ),
-                ),
 
-                // Signup Section
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('Belum punya akun? '),
-                    TextButton(
-                      onPressed: () {
-                        // Navigasi ke halaman pendaftaran (daftar_screen.dart)
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DaftarScreen(),
-                          ),
-                        );
-                      },
-                      child: const Text(
-                        'Daftar Sekarang',
+                  const SizedBox(height: 10),
+
+                  // Belum punya akun? Daftar
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Belum punya akun?',
                         style: TextStyle(
-                          color: Color(0xFFD4B89C),
-                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                          fontSize: 14,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 6),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DaftarScreen(),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          'Daftar Sekarang',
+                          style: TextStyle(
+                            color: Color(0xFF9A7B63),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

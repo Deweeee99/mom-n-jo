@@ -24,6 +24,7 @@ import 'screens/termsofservice_screen.dart';
 import 'screens/NotificationDetailScreen.dart';
 import 'screens/list_notif_screen.dart';
 import 'screens/upload_payment_screen.dart'; // Pastikan path-nya benar
+import 'screens/splash_screen.dart'; // <-- IMPORT SPLASH SCREEN BARU
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,13 +34,16 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+  
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'MomNJo App',
+      debugShowCheckedModeBanner: false, // Ngilangin pita "DEBUG" di pojok
       theme: ThemeData(primaryColor: const Color(0xFF693D2C)),
-      initialRoute: '/home',
+      initialRoute: '/splash', // <-- UBAH KE SPLASH DULUAN
       routes: {
+        '/splash': (context) => const SplashScreen(), // <-- DAFTARIN ROUTE-NYA
         '/': (context) => const HomeScreen(),
         '/home': (context) => const HomeScreen(),
         '/login': (context) => const LoginScreen(),
