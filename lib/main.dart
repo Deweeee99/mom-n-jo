@@ -65,7 +65,7 @@ class MyApp extends StatelessWidget {
             const NotificationDetailScreen(),
         '/ListNotifScreen': (context) => const ListNotifScreen(),
         // Tambahkan route baru untuk Member Status
-        '/memberstatus': (context) => const MemberStatusScreen(),
+        '/member_status': (context) => const MemberStatusScreen(),
         '/UploadPaymen': (context) {
           final args = ModalRoute.of(context)!.settings.arguments
               as Map<String, dynamic>;

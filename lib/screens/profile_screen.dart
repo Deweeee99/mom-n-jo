@@ -1,5 +1,5 @@
 // lib/screens/profile_screen.dart
-// Revised complete ProfileScreen
+// Revised complete ProfileScreen matching the new mockup UI
 // - auto-logout on reload/background (debounced)
 // - controllers as state members to avoid use-after-dispose
 // - all async UI ops guarded by mounted checks
@@ -29,7 +29,6 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
   bool _isLoggedIn = false;
   String _fullname = '';
   String _idCustomer = '';
-  int _currentIndex = 4; // Profile tab
 
   // API endpoints - sesuaikan bila perlu
   final String deleteApiUrl = 'https://app.momnjo.com/api/delete_account.php';
@@ -129,32 +128,6 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     });
   }
 
-  void _navigateToScreen(BuildContext ctx, int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      switch (index) {
-        case 0:
-          Navigator.pushNamed(ctx, '/home');
-          break;
-        case 1:
-          Navigator.pushNamed(ctx, '/booking');
-          break;
-        case 2:
-          Navigator.pushNamed(ctx, '/gift');
-          break;
-        case 3:
-          Navigator.pushNamed(ctx, '/voucher');
-          break;
-        case 4:
-          // already on profile
-          break;
-      }
-    });
-  }
-
   Future<void> _launchURL(String url) async {
     final Uri uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
@@ -168,16 +141,12 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     }
   }
 
+  // Desain menu list disesuaikan dengan mockup (tanpa border bawah, padding luas)
   Widget _buildProfileItem(String title, {VoidCallback? onTap}) {
     return InkWell(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: const BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: Color(0xFFEEEEEE), width: 1),
-          ),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -185,7 +154,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
               title,
               style: const TextStyle(fontSize: 16, color: Color(0xFF666666)),
             ),
-            const Icon(Icons.chevron_right, color: Color(0xFFCCCCCC)),
+            const Icon(Icons.chevron_right, color: Color(0xFFCCCCCC), size: 22),
           ],
         ),
       ),
@@ -197,7 +166,6 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     final prefs = await SharedPreferences.getInstance();
     final idCustomer = prefs.getString('id_customer') ?? _idCustomer;
 
-    // reset controller
     _pwCtrl.text = '';
 
     final confirm = await showDialog<bool>(
@@ -246,7 +214,6 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     if (confirm != true) return;
     final password = _pwCtrl.text.trim();
 
-    // show loading
     if (!mounted) return;
     showDialog(
       context: context,
@@ -265,7 +232,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
       ).timeout(const Duration(seconds: 30));
 
       if (!mounted) return;
-      Navigator.of(context).pop(); // close loading
+      Navigator.of(context).pop();
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> body = json.decode(response.body);
@@ -388,11 +355,6 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
         });
       },
     );
-
-    // controllers kept in state; disposed in dispose()
-    if (result == true) {
-      // success feedback handled in _performChangePassword
-    }
   }
 
   Future<bool?> _performChangePassword(String oldPassword, String newPassword) async {
@@ -419,7 +381,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
       ).timeout(const Duration(seconds: 30));
 
       if (!mounted) return false;
-      Navigator.of(context).pop(); // close loading
+      Navigator.of(context).pop();
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> body = json.decode(response.body);
@@ -460,8 +422,6 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     }
   }
 
-  // ----------------------------------------------------------------------
-
   @override
   Widget build(BuildContext context) {
     if (!_isLoggedIn) {
@@ -469,127 +429,162 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     }
 
     return Scaffold(
+      backgroundColor: const Color(0xFFFAFAFA), // Latar belakang putih bersih
       appBar: AppBar(
-        backgroundColor: Colors.white.withOpacity(0.9),
-        elevation: 1,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black),
-            onPressed: () => Navigator.pop(context)),
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(image: AssetImage('assets/bookbg.png'), fit: BoxFit.cover),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
         ),
-        child: SingleChildScrollView(
-          child: Container(
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.85)),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFFD4B89C).withOpacity(0.2),
-                        Colors.white.withOpacity(0.1)
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundColor: const Color(0xFFD4B89C),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Icon(Icons.person, size: 36, color: Colors.white),
-                            SizedBox(height: 4),
-                            Text('Member', style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(_fullname, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF693D2C))),
-                      Text(_idCustomer, style: const TextStyle(color: Colors.grey)),
-                      Container(
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD4B89C),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))
-                          ],
-                        ),
-                        child: const Text('Member', style: TextStyle(color: Colors.white)),
-                      ),
-                    ],
-                  ),
-                ),
-
-                _buildProfileItem('Edit Profile', onTap: () => Navigator.pushNamed(context, '/editprofile')),
-                _buildProfileItem('Ganti Password', onTap: () => _showChangePasswordDialog()),
-                _buildProfileItem('Promo', onTap: () => _launchURL("https://www.momnjo.com/promo")),
-                _buildProfileItem('MPC Member Area', onTap: () => _launchURL("https://www.momnjo.com/mpc")),
-                _buildProfileItem('Contact Us & Suggestion', onTap: () => Navigator.pushNamed(context, '/ContactUsScreen')),
-                _buildProfileItem('Terms of Service', onTap: () => Navigator.pushNamed(context, '/TermsOfServiceScreen')),
-                _buildProfileItem('FAQ', onTap: () => Navigator.pushNamed(context, '/FAQScreen')),
-
-                // Delete account (requires password)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _confirmAndDeleteWithPassword,
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, padding: const EdgeInsets.symmetric(vertical: 14)),
-                      child: const Text('Hapus Akun', style: TextStyle(color: Colors.white)),
-                    ),
-                  ),
-                ),
-
-                // Logout
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _logout,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey[200],
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                      ),
-                      child: const Text('Logout'),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.star_border, color: Colors.black),
+            onPressed: () {},
           ),
-        ),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_none, color: Colors.black),
+                onPressed: () {},
+              ),
+              Positioned(
+                right: 12,
+                top: 12,
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                  child: const Text(
+                    '2',
+                    style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              )
+            ],
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
-      bottomNavigationBar: Container(
-        color: Colors.white.withOpacity(0.9),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: SalomonBottomBar(
-          currentIndex: _currentIndex,
-          onTap: (index) => _navigateToScreen(context, index),
-          selectedItemColor: const Color(0xFF693D2C),
-          unselectedItemColor: Colors.grey,
-          items: [
-            SalomonBottomBarItem(icon: const Icon(Icons.home), title: const Text("Home"), selectedColor: const Color(0xFF693D2C)),
-            SalomonBottomBarItem(icon: const Icon(Icons.calendar_today_outlined), title: const Text("Booking"), selectedColor: const Color(0xFF693D2C)),
-            SalomonBottomBarItem(icon: const Icon(Icons.card_giftcard_outlined), title: const Text("Gift"), selectedColor: const Color(0xFF693D2C)),
-            SalomonBottomBarItem(icon: const Icon(Icons.confirmation_number_outlined), title: const Text("Voucher"), selectedColor: const Color(0xFF693D2C)),
-            SalomonBottomBarItem(icon: const Icon(Icons.person_outline), title: const Text("Profile"), selectedColor: const Color(0xFF693D2C)),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Header Profil
+            const SizedBox(height: 16),
+            const CircleAvatar(
+              radius: 40,
+              backgroundColor: Color(0xFFE8E0FF), // Warna ungu muda dari mockup
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _fullname,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF5A3D31)),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _idCustomer,
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: () {
+                // Navigasi ke Halaman Member Status (Mockup 2)
+                Navigator.pushNamed(context, '/member_status');
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDCC7B5), // Warna gold muda
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text('Member Gold', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // Kartu Riwayat Transaksi
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.all(20),
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    'Riwayat Transaksi',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF693D2C)),
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    'Rp 0',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFFDCC7B5)),
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    'Belanja dan kumpulkan poin untuk naik ke level selanjutnya!',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Daftar Menu
+            _buildProfileItem('Edit Profile', onTap: () => Navigator.pushNamed(context, '/editprofile')),
+            _buildProfileItem('Ganti Password', onTap: () => _showChangePasswordDialog()),
+            _buildProfileItem('Promo', onTap: () => _launchURL("https://www.momnjo.com/promo")),
+            _buildProfileItem('MPC Member Area', onTap: () => _launchURL("https://www.momnjo.com/mpc")),
+            _buildProfileItem('Contact Us & Suggestion', onTap: () => Navigator.pushNamed(context, '/ContactUsScreen')),
+            _buildProfileItem('Rate', onTap: () {}), // Ditambahkan sesuai Mockup
+            _buildProfileItem('Terms of Service', onTap: () => Navigator.pushNamed(context, '/TermsOfServiceScreen')),
+            _buildProfileItem('FAQ', onTap: () => Navigator.pushNamed(context, '/FAQScreen')),
+
+            const SizedBox(height: 32),
+
+            // Tombol Logout
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _logout,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF5F5F5),
+                    foregroundColor: Colors.black,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)), // Pill shape
+                  ),
+                  child: const Text('Logout', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                ),
+              ),
+            ),
+
+            // Hapus Akun (Ditampilkan dengan desain bersih)
+            Padding(
+              padding: const EdgeInsets.only(top: 16, bottom: 32),
+              child: TextButton(
+                onPressed: _confirmAndDeleteWithPassword,
+                child: const Text('Hapus Akun', style: TextStyle(color: Colors.redAccent, fontSize: 14)),
+              ),
+            ),
           ],
         ),
       ),
+      // bottomNavigationBar telah DIHAPUS dari sini untuk menghindari duplikasi
+      // dengan navbar yang ada di parent screen.
     );
   }
 }
