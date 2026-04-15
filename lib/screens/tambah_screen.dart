@@ -475,24 +475,24 @@ $noTelp
                     const SizedBox(height: 8),
 
                     // 2. Tombol Kirim via WA (Kalo ada WA)
-                    if (wa.isNotEmpty)
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.chat_bubble_outline, size: 18, color: Colors.white),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green, // Hijau WA
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-                            elevation: 0,
-                          ),
-                          onPressed: () {
-                            _openWhatsAppWithMessage(wa, pesanKonfirmasi);
-                          },
-                          label: const Text('Kirim via WhatsApp', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        ),
-                      ),
+                    // if (wa.isNotEmpty)
+                    //   SizedBox(
+                    //     width: double.infinity,
+                    //     child: ElevatedButton.icon(
+                    //       icon: const Icon(Icons.chat_bubble_outline, size: 18, color: Colors.white),
+                    //       style: ElevatedButton.styleFrom(
+                    //         backgroundColor: Colors.green, // Hijau WA
+                    //         foregroundColor: Colors.white,
+                    //         padding: const EdgeInsets.symmetric(vertical: 12),
+                    //         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+                    //         elevation: 0,
+                    //       ),
+                    //       onPressed: () {
+                    //         _openWhatsAppWithMessage(wa, pesanKonfirmasi);
+                    //       },
+                    //       label: const Text('Kirim via WhatsApp', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    //     ),
+                    //   ),
                     const SizedBox(height: 8),
 
                     // 3. Tombol Kembali / OK

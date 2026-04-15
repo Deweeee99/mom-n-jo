@@ -12,7 +12,6 @@ class TreatmentItem {
   final String gambar;
   final int price;
   final String durasi;
-  // final String deskripsi;
 
   TreatmentItem({
     required this.idItem,
@@ -21,7 +20,6 @@ class TreatmentItem {
     required this.gambar,
     required this.price,
     required this.durasi,
-    // required this.deskripsi,
   });
 
   factory TreatmentItem.fromJson(Map<String, dynamic> json) {
@@ -31,10 +29,7 @@ class TreatmentItem {
       satuan: json['satuan'] ?? '',
       gambar: json['gambar'] ?? '',
       price: int.tryParse(json['product_price']?.toString() ?? '0') ?? 0,
-      // Ngambil durasi dan deskripsi dari API. 
-      // Kalau API belum ngirim, otomatis pake '80 min' dan teks contoh biar UI tetap cantik.
       durasi: json['durasi']?.toString() ?? '80 min',
-      // deskripsi: json['deskripsi'] ?? json['description'] ?? 'Detail treatment belum tersedia. Nikmati layanan terbaik dari kami.',
     );
   }
 }
@@ -42,11 +37,13 @@ class TreatmentItem {
 class BookingTreatmentScreen extends StatefulWidget {
   final int subcategoryId;
   final String subcategoryName;
+  final Map<String, dynamic>? bookingData; 
 
   const BookingTreatmentScreen({
     super.key,
     required this.subcategoryId,
     required this.subcategoryName,
+    this.bookingData, 
   });
 
   @override
@@ -61,16 +58,12 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
     decimalDigits: 0,
   );
 
-  // Map untuk menyimpan jumlah (qty) item yang dipilih, key = idItem
   Map<String, int> selectedItems = {};
-
-  // Simpan list treatment lengkap agar bisa diakses saat submit
   List<TreatmentItem>? _treatmentItems;
 
-  // Warna Tema Desain Baru
-  final Color _primaryColor = const Color(0xFF693D2C); // Coklat Tua
-  final Color _bgColor = const Color(0xFFFDF8F4); // Peach Muda Background
-  final Color _btnColor = const Color(0xFFDBA38C); // Warna Peach/Coral Tombol Bawah
+  final Color _primaryColor = const Color(0xFF693D2C); 
+  final Color _bgColor = const Color(0xFFFDF8F4); 
+  final Color _btnColor = const Color(0xFFDBA38C); 
 
   @override
   void initState() {
@@ -96,6 +89,7 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
             'next': '/booking_treatment',
             'subcategoryId': widget.subcategoryId,
             'subcategoryName': widget.subcategoryName,
+            'bookingData': widget.bookingData,
           },
         );
       });
@@ -129,7 +123,6 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
     });
   }
 
-  // Fungsi tambahan buat ngitung total harga real-time
   int _getTotalPrice() {
     if (_treatmentItems == null) return 0;
     int total = 0;
@@ -149,13 +142,13 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
     return Scaffold(
       backgroundColor: _bgColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFEAD8C0), // Warna lebih tebal dari background biar ga nyaru
+        backgroundColor: const Color(0xFFEAD8C0),
         elevation: 2,
         shadowColor: Colors.black26,
         centerTitle: true,
         iconTheme: IconThemeData(color: _primaryColor),
         title: Text(
-          'Select Treatment - ${widget.subcategoryName}', // Sesuaikan dengan mockup lu
+          'Select Treatment - ${widget.subcategoryName}',
           style: TextStyle(
             color: _primaryColor,
             fontWeight: FontWeight.bold,
@@ -165,18 +158,16 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
       ),
       body: Stack(
         children: [
-          // Background Tipis
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
-                image: AssetImage('assets/bookbg.png'), // Pastiin file ada
+                image: AssetImage('assets/bookbg.png'),
                 fit: BoxFit.cover,
                 opacity: 0.15,
               ),
             ),
           ),
           
-          // List Treatment
           SafeArea(
             child: FutureBuilder<List<TreatmentItem>>(
               future: _futureItems,
@@ -198,7 +189,7 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
 
                 final items = snapshot.data!;
                 return ListView.builder(
-                  padding: const EdgeInsets.only(top: 20, bottom: 120, left: 20, right: 20), // Bottom padding gede biar ga ketutup bar
+                  padding: const EdgeInsets.only(top: 20, bottom: 120, left: 20, right: 20),
                   itemCount: items.length,
                   itemBuilder: (context, index) {
                     final treatment = items[index];
@@ -222,7 +213,6 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Gambar Treatment
                           ClipRRect(
                             borderRadius: BorderRadius.circular(14),
                             child: Image.network(
@@ -241,13 +231,10 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
                             ),
                           ),
                           const SizedBox(width: 14),
-                          
-                          // Informasi Treatment
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Baris Judul dan Harga
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,8 +264,6 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
                                   ],
                                 ),
                                 const SizedBox(height: 6),
-                                
-                                // Durasi (Diganti dari satuan ke durasi)
                                 Text(
                                   'Durasi: ${treatment.durasi}',
                                   style: const TextStyle(
@@ -287,29 +272,12 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
                                     color: Colors.black87,
                                   ),
                                 ),
-                                const SizedBox(height: 2),
-                                
-                                // Deskripsi Treatment (Baru ditambahkan)
-                                // Text(
-                                //    treatment.deskripsi,
-                                //   style: TextStyle(
-                                //     fontSize: 11,
-                                //     color: Colors.grey.shade600,
-                                //     height: 1.3,
-                                //   ),
-                                //   maxLines: 2,
-                                //   overflow: TextOverflow.ellipsis,
-                                // ),
-                                
                                 const SizedBox(height: 8),
-                                
-                                // Tombol Plus Minus Estetik (Ala Desain)
                                 Align(
                                   alignment: Alignment.bottomRight,
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      // Tombol Minus (Outline)
                                       InkWell(
                                         onTap: () => _decrementQty(treatment.idItem),
                                         borderRadius: BorderRadius.circular(8),
@@ -322,8 +290,6 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
                                           child: Icon(Icons.remove, size: 18, color: Colors.grey.shade700),
                                         ),
                                       ),
-                                      
-                                      // Angka Qty
                                       Padding(
                                         padding: const EdgeInsets.symmetric(horizontal: 14),
                                         child: Text(
@@ -335,15 +301,13 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
                                           ),
                                         ),
                                       ),
-                                      
-                                      // Tombol Plus (Solid)
                                       InkWell(
                                         onTap: () => _incrementQty(treatment.idItem),
                                         borderRadius: BorderRadius.circular(8),
                                         child: Container(
                                           padding: const EdgeInsets.all(4),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFFC48671), // Warna solid kecoklatan
+                                            color: const Color(0xFFC48671),
                                             borderRadius: BorderRadius.circular(8),
                                           ),
                                           child: const Icon(Icons.add, size: 18, color: Colors.white),
@@ -364,7 +328,7 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
             ),
           ),
 
-          // BOTTOM BAR (TOTAL HARGA & TOMBOL LANJUT)
+          // BOTTOM BAR
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
@@ -386,7 +350,6 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Teks Total Selected
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -410,32 +373,23 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
                         ),
                       ],
                     ),
-                    
-                    // Tombol Continue Booking
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _btnColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(100), // Melengkung pil
+                          borderRadius: BorderRadius.circular(100),
                         ),
                         elevation: 0,
                       ),
                       onPressed: () {
                         try {
-                          final selectedList =
-                              selectedItems.entries.where((e) => e.value > 0).map((e) {
+                          final newList = selectedItems.entries.where((e) => e.value > 0).map((e) {
                             final treatment = _treatmentItems?.firstWhere(
                               (item) => item.idItem == e.key,
                               orElse: () => TreatmentItem(
-                                idItem: e.key,
-                                namaItem: 'Unknown',
-                                satuan: '',
-                                gambar: '',
-                                price: 0,
-                                durasi: '',
-                                // deskripsi: '',
+                                idItem: e.key, namaItem: 'Unknown', satuan: '', gambar: '', price: 0, durasi: '',
                               ),
                             );
 
@@ -444,20 +398,42 @@ class _BookingTreatmentScreenState extends State<BookingTreatmentScreen> {
                               'nama_item_master': treatment?.namaItem ?? 'Unknown Treatment',
                               'qty': e.value,
                               'product_price': treatment?.price ?? 0,
+                              // BRAY: INI KODE SAKTI BUAT BAWA KATEGORI & GAMBAR KE KERANJANG
+                              'subcategoryName': widget.subcategoryName, 
+                              'gambar': treatment?.gambar ?? '', 
                             };
                           }).toList();
 
-                          if (selectedList.isEmpty) {
+                          List<dynamic> existingCart = widget.bookingData?['selectedTreatments'] ?? [];
+                          List<Map<String, dynamic>> combinedCart = List<Map<String, dynamic>>.from(existingCart);
+
+                          for (var newItem in newList) {
+                            int existingIndex = combinedCart.indexWhere(
+                              (item) => item['idItem'].toString() == newItem['idItem'].toString()
+                            );
+
+                            if (existingIndex != -1) {
+                              combinedCart[existingIndex]['qty'] = (combinedCart[existingIndex]['qty'] as int) + (newItem['qty'] as int);
+                              // BRAY: Update jg category nya barangkali yg lama kosong
+                              combinedCart[existingIndex]['subcategoryName'] = newItem['subcategoryName'];
+                            } else {
+                              combinedCart.add(newItem);
+                            }
+                          }
+
+                          if (combinedCart.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Pilih minimal 1 treatment')),
                             );
                             return;
                           }
+
                           Navigator.pushNamed(
                             context,
                             '/booking_detail',
                             arguments: {
-                              'selectedTreatments': selectedList,
+                              ...?(widget.bookingData ?? {}), 
+                              'selectedTreatments': combinedCart, 
                               'subcategoryId': widget.subcategoryId,
                               'subcategoryName': widget.subcategoryName,
                             },

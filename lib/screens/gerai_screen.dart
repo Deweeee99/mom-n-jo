@@ -1,4 +1,3 @@
-// gerai_screen.dart (revisi)
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -94,10 +93,9 @@ class GeraiScreen extends StatelessWidget {
               icon: const Icon(Icons.refresh),
               label: const Text('Coba Lagi'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD4B89C),
+                backgroundColor: const Color(0xFF693D2C), // Warna tombol error ngikut tema utama
                 foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
             ),
           ],
@@ -108,32 +106,40 @@ class GeraiScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final int branchId =
-        ModalRoute.of(context)?.settings.arguments as int? ?? 0;
+    final int branchId = ModalRoute.of(context)?.settings.arguments as int? ?? 0;
+    final Color primaryColor = const Color(0xFF693D2C);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFFDF8F4), // Background peach muda
+      extendBodyBehindAppBar: true, // Bikin gambar bisa tembus ke bawah App Bar
       appBar: AppBar(
-        backgroundColor: const Color(0xFFD4B89C),
+        backgroundColor: Colors.transparent, // Transparan biar gambar keliatan
         elevation: 0,
-        title:
-            const Text('Detail Gerai', style: TextStyle(color: Colors.white)),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 8.0, top: 8.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.8), // Bulatan tipis biar tombol back keliatan jelas
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: Icon(Icons.arrow_back, color: primaryColor),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
         ),
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: fetchGeraiData(branchId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(color: Color(0xFFD4B89C)),
-                  SizedBox(height: 16),
-                  Text('Memuat data...', style: TextStyle(color: Colors.grey)),
+                  CircularProgressIndicator(color: primaryColor),
+                  const SizedBox(height: 16),
+                  const Text('Memuat data...', style: TextStyle(color: Colors.grey)),
                 ],
               ),
             );
@@ -141,13 +147,11 @@ class GeraiScreen extends StatelessWidget {
             String errorMessage = 'Terjadi kesalahan';
             final err = snapshot.error;
             if (err is NoInternetException) {
-              errorMessage =
-                  'Mohon maaf, internet tidak tersedia.\nSilakan periksa koneksi internet Anda.';
+              errorMessage = 'Mohon maaf, internet tidak tersedia.\nSilakan periksa koneksi internet Anda.';
             } else if (err is TimeoutException) {
               errorMessage = 'Koneksi timeout.\nSilakan coba lagi.';
             } else if (err is SocketException) {
-              errorMessage =
-                  'Tidak dapat terhubung ke server.\nSilakan coba lagi nanti.';
+              errorMessage = 'Tidak dapat terhubung ke server.\nSilakan coba lagi nanti.';
             } else if (err is FormatException) {
               errorMessage = 'Format data tidak sesuai.\nSilakan coba lagi.';
             } else if (err is ArgumentError) {
@@ -159,7 +163,6 @@ class GeraiScreen extends StatelessWidget {
             }
 
             return _buildErrorWidget(errorMessage, () {
-              // trigger rebuild dan panggil ulang FutureBuilder
               (context as Element).markNeedsBuild();
             });
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -170,137 +173,171 @@ class GeraiScreen extends StatelessWidget {
           final geraiData = snapshot.data!;
 
           final String namaGerai = geraiData['nama_gerai']?.toString() ?? 'N/A';
-          final String kontakGerai =
-              geraiData['kontak_gerai']?.toString() ?? 'N/A';
-          final String lokasiGerai =
-              geraiData['lokasi_gerai']?.toString() ?? 'N/A';
-          final String namaPerusahaan =
-              geraiData['nama_perusahaan']?.toString() ?? 'N/A';
+          final String kontakGerai = geraiData['kontak_gerai']?.toString() ?? 'N/A';
+          final String lokasiGerai = geraiData['lokasi_gerai']?.toString() ?? 'N/A';
+          final String namaPerusahaan = geraiData['nama_perusahaan']?.toString() ?? 'N/A';
           final String kontakWa = geraiData['kontak_wa']?.toString() ?? '';
           final String kodeGerai = geraiData['kode_gerai']?.toString() ?? 'N/A';
 
           return SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 40),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // 1. HEADER IMAGE MELENGKUNG (Sesuai Mockup)
                 Container(
-                  height: 200,
+                  height: 320, // Tinggi gambar diatur biar pas
+                  width: double.infinity,
                   decoration: const BoxDecoration(
-                    color: Color(0xFFD4B89C),
-                    borderRadius: BorderRadius.only(
-                        bottomLeft: Radius.circular(50),
-                        bottomRight: Radius.circular(50)),
+                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(50)),
+                    image: DecorationImage(
+                      image: AssetImage('assets/darmawangsa.png'), // Fallback ke image asset
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                  child: Center(
-                    child: Stack(
-                      alignment: Alignment.center,
+                ),
+
+                // 2. CARD INFORMASI (Posisi ditarik ke atas biar overlap sama gambar)
+                Transform.translate(
+                  offset: const Offset(0, -40), // Tarik ke atas 40 pixel
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Column(
                       children: [
-                        CircleAvatar(
-                          radius: 50,
-                          backgroundColor: Colors.white,
-                          child: ClipOval(
-                            child: Image.asset('assets/darmawangsa.png',
-                                fit: BoxFit.cover, width: 100, height: 100),
+                        // NAMA & KODE GERAI
+                        Text(
+                          namaGerai,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: primaryColor,
                           ),
                         ),
+                        const SizedBox(height: 6),
+                        Text(
+                          kodeGerai.isNotEmpty ? 'Kode: $kodeGerai' : 'Kode: -',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 16),
+                        Divider(color: Colors.grey.shade300, thickness: 1),
+                        const SizedBox(height: 16),
+                        
+                        // LOKASI
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.location_on_outlined, color: Colors.grey.shade600, size: 22),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                lokasiGerai,
+                                style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.4),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // TELEPON
+                        Row(
+                          children: [
+                            Icon(Icons.phone_in_talk_outlined, color: Colors.grey.shade600, size: 22),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                kontakGerai,
+                                style: const TextStyle(fontSize: 14, color: Colors.black87),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // NAMA PERUSAHAAN (MOM N JO)
+                        Row(
+                          children: [
+                            Icon(Icons.store_mall_directory_outlined, color: Colors.grey.shade600, size: 22),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                namaPerusahaan,
+                                style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                        
+                        const SizedBox(height: 24),
+                        
+                        // TOMBOL WHATSAPP
+                        if (kontakWa.isNotEmpty)
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () => _launchWhatsApp(kontakWa),
+                              // Pake icon chat biasa aja kalau gaada asset icon WA
+                              icon: const Icon(Icons.chat_bubble_outline, size: 20, color: Colors.white),
+                              label: const Text(
+                                'Hubungi via WhatsApp',
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF4CAF50), // Ijo WhatsApp
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Card(
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24.0)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        children: [
-                          Text(namaGerai,
-                              style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF693D2C))),
-                          const SizedBox(height: 6),
-                          Text(
-                              kodeGerai.isNotEmpty
-                                  ? 'Kode: $kodeGerai'
-                                  : 'Kode: -',
-                              style: TextStyle(
-                                  fontSize: 14, color: Colors.grey[700])),
-                          const Divider(height: 30, color: Colors.grey),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(Icons.location_on_outlined,
-                                  color: Colors.black54),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                  child: Text(lokasiGerai,
-                                      style: const TextStyle(fontSize: 14))),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              const Icon(Icons.phone_in_talk_outlined,
-                                  color: Colors.black54),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                  child: Text(kontakGerai,
-                                      style: const TextStyle(fontSize: 14))),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              const Icon(Icons.store_mall_directory_outlined,
-                                  color: Colors.black54),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                  child: Text(namaPerusahaan,
-                                      style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500))),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          if (kontakWa.isNotEmpty)
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: () => _launchWhatsApp(kontakWa),
-                                icon: Image.asset('assets/wa.png',
-                                    height: 24, width: 24),
-                                label: const Text('Hubungi via WhatsApp'),
-                                style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(12))),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 8.0),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey[200],
-                          foregroundColor: Colors.black,
+
+                // 3. TOMBOL KEMBALI
+                Transform.translate(
+                  offset: const Offset(0, -20), // Nyesuain jarak overlap
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey.shade200,
+                          foregroundColor: Colors.black87,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          elevation: 0,
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(vertical: 14)),
-                      child: const Text('Kembali'),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text(
+                          'Kembali',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                      ),
                     ),
                   ),
                 ),

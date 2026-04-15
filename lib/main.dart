@@ -116,12 +116,17 @@ class MyApp extends StatelessWidget {
               ? subcatIdValue
               : int.tryParse(subcatIdValue.toString()) ?? 0;
           final subcatName = rawArgs['subcategoryName'] as String? ?? 'Unknown';
+          
+          // ---> INI DIA FIX-NYA bray: Nangkep keranjang lama <---
+          final bookingData = rawArgs['bookingData']; 
+
           debugPrint(
-            "DEBUG: /booking_treatment => subcategoryId=$subcategoryId, subcatName=$subcatName",
+            "DEBUG: /booking_treatment => subcategoryId=$subcategoryId, subcatName=$subcatName, bookingData=$bookingData",
           );
           return BookingTreatmentScreen(
             subcategoryId: subcategoryId,
             subcategoryName: subcatName,
+            bookingData: bookingData, // <-- Oper keranjang lamanya ke halaman treatment
           );
         },
 

@@ -2,46 +2,89 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class BookingDetailScreen extends StatelessWidget {
+class BookingDetailScreen extends StatefulWidget {
   final Map<String, dynamic> bookingData;
 
   const BookingDetailScreen({super.key, required this.bookingData});
 
   @override
+  State<BookingDetailScreen> createState() => _BookingDetailScreenState();
+}
+
+class _BookingDetailScreenState extends State<BookingDetailScreen> {
+  // Kita bikin variable state buat nampung keranjang biar bisa diubah-ubah angkanya
+  List<Map<String, dynamic>> _mutableTreatments = [];
+
+  // Tema Warna Desain Baru
+  final Color primaryColor = const Color(0xFF693D2C); // Coklat Tua
+  final Color bgColor = const Color(0xFFFDF8F4); // Peach Muda Background
+  final Color btnColor = const Color(0xFFDBA38C); // Warna Peach/Coral Tombol
+
+  @override
+  void initState() {
+    super.initState();
+    // Copy data keranjang dari halaman sebelumnya ke variable lokal kita
+    final initialTreatments = widget.bookingData['selectedTreatments'] as List<dynamic>? ?? [];
+    _mutableTreatments = initialTreatments.map((e) => Map<String, dynamic>.from(e)).toList();
+  }
+
+  // Fungsi buat nambahin Qty
+  void _increaseQty(Map<String, dynamic> treatment) {
+    setState(() {
+      int currentQty = treatment['qty'] ?? 0;
+      treatment['qty'] = currentQty + 1;
+    });
+  }
+
+  // Fungsi buat ngurangin Qty
+  void _decreaseQty(Map<String, dynamic> treatment) {
+    setState(() {
+      int currentQty = treatment['qty'] ?? 0;
+      if (currentQty > 1) {
+        treatment['qty'] = currentQty - 1;
+      } else {
+        // Kalo udah 1 dan dikurangin lagi, hapus barangnya dari keranjang!
+        _mutableTreatments.remove(treatment);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Ambil data dari bookingData
-    final selectedTreatments =
-        bookingData['selectedTreatments'] as List<dynamic>? ?? [];
-    final subcategoryName = bookingData['subcategoryName'] as String? ?? 'Unknown Category';
+    // BRAY: KITA KELOMPOKKAN TREATMENT BERDASARKAN KATEGORI BIAR RAPI
+    final Map<String, List<dynamic>> groupedTreatments = {};
+    for (var t in _mutableTreatments) {
+      String catName = t['subcategoryName'] ?? widget.bookingData['subcategoryName'] ?? 'Unknown Category';
+      if (!groupedTreatments.containsKey(catName)) {
+        groupedTreatments[catName] = [];
+      }
+      groupedTreatments[catName]!.add(t);
+    }
+
     final NumberFormat rupiahFormat = NumberFormat.currency(
       locale: 'id',
       symbol: 'Rp ',
       decimalDigits: 0,
     );
 
-    // Hitung total harga
+    // Hitung total harga Real-Time
     int totalHarga = 0;
-    for (var treatment in selectedTreatments) {
+    for (var treatment in _mutableTreatments) {
       int qty = treatment['qty'] ?? 0;
       int price = treatment['product_price'] ?? 0;
       totalHarga += qty * price;
     }
 
-    // Tema Warna Desain Baru
-    final Color primaryColor = const Color(0xFF693D2C); // Coklat Tua
-    final Color bgColor = const Color(0xFFFDF8F4); // Peach Muda Background
-    final Color btnColor = const Color(0xFFDBA38C); // Warna Peach/Coral Tombol
-
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFEAD8C0), // Warna solid krem biar header ga nyaru
+        backgroundColor: const Color(0xFFEAD8C0), // Warna solid krem
         elevation: 2,
         shadowColor: Colors.black26,
         centerTitle: true,
         iconTheme: IconThemeData(color: primaryColor),
         title: Text(
-          'Booking Details', // Sesuai dengan text di mockup
+          'Booking Details',
           style: TextStyle(
             color: primaryColor,
             fontWeight: FontWeight.bold,
@@ -55,7 +98,7 @@ class BookingDetailScreen extends StatelessWidget {
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
-                image: AssetImage('assets/bookbg.png'), // Opsional kalau ada pattern
+                image: AssetImage('assets/bookbg.png'), 
                 fit: BoxFit.cover,
                 opacity: 0.15,
               ),
@@ -65,166 +108,174 @@ class BookingDetailScreen extends StatelessWidget {
           Column(
             children: [
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // LABEL SELECTED CATEGORY
-                      Text(
-                        'Selected Category',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: primaryColor,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      
-                      // KARTU SELECTED CATEGORY
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 15,
-                              spreadRadius: 2,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Row(
+                child: _mutableTreatments.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFF9EAE1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.clean_hands_outlined, // Icon tangan ala spa
-                                color: btnColor,
-                                size: 28,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Text(
-                                subcategoryName,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: primaryColor,
-                                ),
-                              ),
-                            ),
+                            Icon(Icons.shopping_cart_outlined, size: 60, color: primaryColor.withOpacity(0.4)),
+                            const SizedBox(height: 16),
+                            Text('Keranjang kosong', style: TextStyle(color: primaryColor, fontSize: 16, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      )
+                    : SingleChildScrollView(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // LOOPING PER KELOMPOK KATEGORI
+                            ...groupedTreatments.entries.map((entry) {
+                              final categoryName = entry.key;
+                              final treatments = entry.value;
+
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // 1. KARTU HEADER KATEGORI
+                                  Container(
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF9EAE1), 
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(color: btnColor.withOpacity(0.4)),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.spa, color: primaryColor, size: 24),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            categoryName,
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: primaryColor,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  
+                                  // 2. LIST TREATMENT DI BAWAH KATEGORI TERSEBUT
+                                  ...treatments.map((treatment) {
+                                    final treatmentName = treatment['nama_item_master'] ?? 'Unknown Treatment';
+                                    final qty = treatment['qty'] ?? 0;
+                                    final price = treatment['product_price'] ?? 0;
+                                    final gambar = treatment['gambar']; 
+
+                                    return Container(
+                                      margin: const EdgeInsets.only(bottom: 12, left: 8, right: 8), 
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(16),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.04),
+                                            blurRadius: 15,
+                                            spreadRadius: 2,
+                                            offset: const Offset(0, 5),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          // GAMBAR TREATMENT
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(12),
+                                            child: gambar != null && gambar.toString().isNotEmpty
+                                                ? Image.network(
+                                                    'https://app.momnjo.com/assets/foto_item/$gambar',
+                                                    width: 70,
+                                                    height: 70,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (context, error, stack) => _buildPlaceholderImage(),
+                                                  )
+                                                : _buildPlaceholderImage(),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          
+                                          // INFO TREATMENT + TOMBOL PLUS MINUS
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  treatmentName,
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: primaryColor,
+                                                  ),
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                const SizedBox(height: 6),
+                                                Text(
+                                                  rupiahFormat.format(price),
+                                                  style: const TextStyle(
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.black87,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                
+                                                // BRAY: INI FITUR TAMBAH KURANG QTY ESTETIK
+                                                Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    InkWell(
+                                                      onTap: () => _decreaseQty(treatment),
+                                                      borderRadius: BorderRadius.circular(6),
+                                                      child: Container(
+                                                        padding: const EdgeInsets.all(4),
+                                                        decoration: BoxDecoration(
+                                                          border: Border.all(color: Colors.grey.shade300),
+                                                          borderRadius: BorderRadius.circular(6),
+                                                        ),
+                                                        child: Icon(qty == 1 ? Icons.delete_outline : Icons.remove, size: 14, color: qty == 1 ? Colors.red : Colors.grey.shade700),
+                                                      ),
+                                                    ),
+                                                    Padding(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                                                      child: Text(
+                                                        '$qty',
+                                                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                                      ),
+                                                    ),
+                                                    InkWell(
+                                                      onTap: () => _increaseQty(treatment),
+                                                      borderRadius: BorderRadius.circular(6),
+                                                      child: Container(
+                                                        padding: const EdgeInsets.all(4),
+                                                        decoration: BoxDecoration(
+                                                          color: btnColor.withOpacity(0.2),
+                                                          borderRadius: BorderRadius.circular(6),
+                                                        ),
+                                                        child: Icon(Icons.add, size: 14, color: primaryColor),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                  
+                                  const SizedBox(height: 16), 
+                                ],
+                              );
+                            }).toList(),
                           ],
                         ),
                       ),
-                      
-                      const SizedBox(height: 30),
-                      
-                      // LABEL SELECTED TREATMENTS
-                      Text(
-                        'Selected Treatments',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: primaryColor,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      
-                      // LIST TREATMENTS
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: selectedTreatments.length,
-                        itemBuilder: (context, index) {
-                          final treatment = selectedTreatments[index] as Map<String, dynamic>;
-                          final treatmentName = treatment['nama_item_master'] ?? 'Unknown Treatment';
-                          final qty = treatment['qty'] ?? 0;
-                          final price = treatment['product_price'] ?? 0;
-                          // Jika kodingan sblmnya mengirim gambar, tangkap di sini. Jika tidak, pakai placeholder
-                          final gambar = treatment['gambar']; 
-
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.04),
-                                  blurRadius: 15,
-                                  spreadRadius: 2,
-                                  offset: const Offset(0, 5),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                // GAMBAR TREATMENT
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: gambar != null && gambar.toString().isNotEmpty
-                                      ? Image.network(
-                                          'https://app.momnjo.com/assets/foto_item/$gambar',
-                                          width: 70,
-                                          height: 70,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stack) => _buildPlaceholderImage(),
-                                        )
-                                      : _buildPlaceholderImage(),
-                                ),
-                                const SizedBox(width: 16),
-                                
-                                // INFO TREATMENT
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        treatmentName,
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: primaryColor,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        'Harga: ${rupiahFormat.format(price)}',
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Qty: $qty',
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
               ),
               
               // BOTTOM SECTION (TOTAL & BUTTONS)
@@ -286,10 +337,14 @@ class BookingDetailScreen extends StatelessWidget {
                                 ),
                               ),
                               onPressed: () {
+                                // Update keranjang terakhir sebelum pindah halaman
+                                final updatedBookingData = Map<String, dynamic>.from(widget.bookingData);
+                                updatedBookingData['selectedTreatments'] = _mutableTreatments;
+
                                 Navigator.pushNamed(
                                   context,
                                   '/kategori',
-                                  arguments: bookingData,
+                                  arguments: updatedBookingData, 
                                 );
                               },
                               child: const Text(
@@ -318,6 +373,17 @@ class BookingDetailScreen extends StatelessWidget {
                                 ),
                               ),
                               onPressed: () async {
+                                if (_mutableTreatments.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Keranjang Anda kosong! Silakan pilih treatment.')),
+                                  );
+                                  return;
+                                }
+
+                                // Update keranjang terakhir sebelum checkout ke API form
+                                final updatedBookingData = Map<String, dynamic>.from(widget.bookingData);
+                                updatedBookingData['selectedTreatments'] = _mutableTreatments;
+
                                 final prefs = await SharedPreferences.getInstance();
                                 bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
                                 
@@ -327,14 +393,14 @@ class BookingDetailScreen extends StatelessWidget {
                                     '/login',
                                     arguments: {
                                       'next': '/tambah',
-                                      'bookingData': bookingData,
+                                      'bookingData': updatedBookingData,
                                     },
                                   );
                                 } else {
                                   Navigator.pushNamed(
                                     context,
                                     '/tambah',
-                                    arguments: bookingData,
+                                    arguments: updatedBookingData,
                                   );
                                 }
                               },
@@ -362,13 +428,12 @@ class BookingDetailScreen extends StatelessWidget {
     );
   }
 
-  // Widget Helper buat gambar placeholder (Kalau dari sblmnya ga dikirim data gambarnya)
   Widget _buildPlaceholderImage() {
     return Container(
       width: 70,
       height: 70,
       decoration: BoxDecoration(
-        color: const Color(0xFF382314), // Coklat gelap sesuai mockup
+        color: const Color(0xFF382314),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -378,7 +443,7 @@ class BookingDetailScreen extends StatelessWidget {
             'NO IMAGE\nAVAILABLE',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Color(0xFFD4B89C), // Warna emas/krem
+              color: Color(0xFFD4B89C),
               fontSize: 7,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
@@ -387,7 +452,7 @@ class BookingDetailScreen extends StatelessWidget {
           ),
           SizedBox(height: 4),
           Icon(
-            Icons.spa_outlined, // Icon pengganti siluet ibu & anak
+            Icons.spa_outlined,
             color: Color(0xFFD4B89C),
             size: 16,
           ),

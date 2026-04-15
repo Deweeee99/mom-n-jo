@@ -6,7 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 
 class EditProfileScreen extends StatefulWidget {
-  const EditProfileScreen({Key? key}) : super(key: key);
+  const EditProfileScreen({super.key});
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -169,20 +169,38 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           desiredAccuracy: LocationAccuracy.high);
 
       // 4. Ubah koordinat menjadi teks alamat (Geocoding)
-      List<Placemark> placemarks =
-          await placemarkFromCoordinates(position.latitude, position.longitude);
+      // DIBUNGKUS TRY-CATCH KHUSUS BIAR AMAN DI WINDOWS DESKTOP!
+      try {
+        List<Placemark> placemarks =
+            await placemarkFromCoordinates(position.latitude, position.longitude);
 
-      if (placemarks.isNotEmpty) {
-        Placemark place = placemarks.first;
-        // Gabungkan elemen alamat
-        String address =
-            '${place.street}, ${place.subLocality}, ${place.locality}, ${place.subAdministrativeArea}, ${place.postalCode}';
-        
+        if (placemarks.isNotEmpty) {
+          Placemark place = placemarks.first;
+          
+          // Gabungkan elemen alamat dengan aman
+          List<String> addressParts = [];
+          if (place.street != null && place.street!.isNotEmpty) addressParts.add(place.street!);
+          if (place.subLocality != null && place.subLocality!.isNotEmpty) addressParts.add(place.subLocality!);
+          if (place.locality != null && place.locality!.isNotEmpty) addressParts.add(place.locality!);
+          if (place.subAdministrativeArea != null && place.subAdministrativeArea!.isNotEmpty) addressParts.add(place.subAdministrativeArea!);
+          if (place.postalCode != null && place.postalCode!.isNotEmpty) addressParts.add(place.postalCode!);
+
+          String address = addressParts.join(', ');
+          
+          setState(() {
+            _addressController.text = address; // Isi kolom otomatis
+          });
+          _showSuccessSnackbar('Lokasi berhasil ditemukan!');
+        }
+      } catch (e) {
+        // JARING PENGAMAN: Kalo geocoding gagal (karena dijalanin di Windows)
+        // Set nilai Latitude dan Longitude aja biar gak layar merah
         setState(() {
-          _addressController.text = address; // Isi kolom otomatis
+          _addressController.text = 'Lat: ${position.latitude.toStringAsFixed(5)}, Lng: ${position.longitude.toStringAsFixed(5)}';
         });
-        _showSuccessSnackbar('Lokasi berhasil ditemukan!');
+        _showSuccessSnackbar('Koordinat berhasil didapat (Geocoding tidak didukung di Windows)');
       }
+
     } catch (e) {
       _showErrorSnackbar('Gagal mendapatkan lokasi: $e');
     } finally {
@@ -244,7 +262,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required Widget child,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -280,7 +298,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  /// Konfigurasi input form tanpa garis bawah (karena sudah dibungkus kotak putih)
+  /// Konfigurasi input form tanpa garis bawah
   InputDecoration _cleanInputDecoration() {
     return const InputDecoration(
       isDense: true,
@@ -308,411 +326,401 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      // Latar belakang gradient lembut
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF9EAE1), // Peach muda atas
-              Color(0xFFE8D4CC), // Pink kecoklatan bawah
-            ],
-          ),
-        ),
-        child: Column(
-          children: [
-            // --- HEADER COKELAT MELENGKUNG ---
-            Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFF693D2C), // MomNJo Brown
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
-              ),
-              padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top + 10,
-                bottom: 24,
-                left: 20,
-                right: 20,
-              ),
-              child: Column(
-                children: [
-                  // App Bar Custom
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      const Text(
-                        'Edit Profil',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontStyle: FontStyle.italic,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.search, color: Colors.white, size: 22),
-                            onPressed: () {},
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.notifications_none, color: Colors.white, size: 22),
-                            onPressed: () {},
-                          ),
-                        ],
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  // Profil Detail
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: const BoxDecoration(
-                          color: Colors.white24,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const CircleAvatar(
-                          radius: 30,
-                          backgroundColor: Color(0xFFDCC7B5),
-                          child: Icon(Icons.person, color: Colors.white, size: 36),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _fullnameController.text.isNotEmpty ? _fullnameController.text : 'Dewa TSI',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Healthy pregnancy, baby',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      )
-                    ],
-                  )
-                ],
-              ),
+      backgroundColor: const Color(0xFFF5EBE6), // Background peach pucat full layar
+      body: Column(
+        children: [
+          // --- HEADER COKELAT MELENGKUNG ---
+          Container(
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              color: Color(0xFF5E392A), // Warna coklat gelap persis desain
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(35)),
             ),
-
-            // --- FORM CONTENT ---
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // ROW 1: Nama Lengkap & Nickname
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildCardField(
-                              label: 'Nama Lengkap',
-                              icon: Icons.person_outline,
-                              child: TextFormField(
-                                controller: _fullnameController,
-                                decoration: _cleanInputDecoration(),
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                                validator: (val) => (val == null || val.isEmpty) ? 'Wajib diisi' : null,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildCardField(
-                              label: 'Nickname',
-                              icon: Icons.person,
-                              child: TextFormField(
-                                controller: _nicknameController,
-                                decoration: _cleanInputDecoration(),
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                              ),
-                            ),
-                          ),
-                        ],
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 16,
+              bottom: 30,
+              left: 20,
+              right: 20,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // App Bar Custom
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                      onPressed: () => Navigator.pop(context),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                    const Text(
+                      'Edit Profil',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontStyle: FontStyle.italic,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(height: 12),
-
-                      // ROW 2: Email
-                      _buildCardField(
-                        label: 'Email',
-                        icon: Icons.email_outlined,
-                        child: TextFormField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: _cleanInputDecoration(),
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                          validator: (val) => (val == null || val.isEmpty) ? 'Wajib diisi' : null,
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.search, color: Colors.white, size: 24),
+                          onPressed: () {},
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
                         ),
+                        const SizedBox(width: 16),
+                        IconButton(
+                          icon: const Icon(Icons.notifications_none, color: Colors.white, size: 24),
+                          onPressed: () {},
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+                const SizedBox(height: 30),
+                // Profil Detail
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2), // Lingkaran pudar luar
+                        shape: BoxShape.circle,
                       ),
-                      const SizedBox(height: 12),
+                      child: const CircleAvatar(
+                        radius: 35,
+                        backgroundColor: Color(0xFFDCC7B5), // Warna dalam avatar
+                        child: Icon(Icons.person, color: Colors.white, size: 45),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _fullnameController.text.isNotEmpty ? _fullnameController.text : 'Dewa TSI',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Healthy pregnancy, baby',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    )
+                  ],
+                )
+              ],
+            ),
+          ),
 
-                      // ROW 3: Tanggal Lahir & Jenis Kelamin
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildCardField(
-                              label: 'Tanggal Lahir',
-                              icon: Icons.calendar_today_outlined,
-                              child: InkWell(
-                                onTap: _selectDate,
-                                child: IgnorePointer(
-                                  child: TextFormField(
-                                    controller: _dobController,
-                                    decoration: _cleanInputDecoration(),
-                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                                    validator: (val) => (val == null || val.isEmpty) ? 'Wajib diisi' : null,
-                                  ),
+          // --- FORM CONTENT ---
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ROW 1: Nama Lengkap & Nickname
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildCardField(
+                            label: 'Nama Lengkap',
+                            icon: Icons.person_outline,
+                            child: TextFormField(
+                              controller: _fullnameController,
+                              decoration: _cleanInputDecoration(),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                              validator: (val) => (val == null || val.isEmpty) ? 'Wajib diisi' : null,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildCardField(
+                            label: 'Nickname',
+                            icon: Icons.person,
+                            child: TextFormField(
+                              controller: _nicknameController,
+                              decoration: _cleanInputDecoration(),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // ROW 2: Email
+                    _buildCardField(
+                      label: 'Email',
+                      icon: Icons.email_outlined,
+                      child: TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: _cleanInputDecoration(),
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                        validator: (val) => (val == null || val.isEmpty) ? 'Wajib diisi' : null,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // ROW 3: Tanggal Lahir & Jenis Kelamin
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildCardField(
+                            label: 'Tanggal Lahir',
+                            icon: Icons.calendar_today_outlined,
+                            child: InkWell(
+                              onTap: _selectDate,
+                              child: IgnorePointer(
+                                child: TextFormField(
+                                  controller: _dobController,
+                                  decoration: _cleanInputDecoration(),
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                  validator: (val) => (val == null || val.isEmpty) ? 'Wajib diisi' : null,
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildCardField(
-                              label: 'Jenis Kelamin',
-                              icon: Icons.person_outline,
-                              child: DropdownButtonFormField<String>(
-                                value: _selectedGender,
-                                decoration: _cleanInputDecoration(),
-                                icon: const Icon(Icons.arrow_drop_down, size: 20),
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87),
-                                items: _genderOptions.map((gender) => DropdownMenuItem(value: gender, child: Text(gender))).toList(),
-                                onChanged: (value) => setState(() => _selectedGender = value!),
-                              ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildCardField(
+                            label: 'Jenis Kelamin',
+                            icon: Icons.person_outline,
+                            child: DropdownButtonFormField<String>(
+                              value: _selectedGender,
+                              decoration: _cleanInputDecoration(),
+                              icon: const Icon(Icons.arrow_drop_down, size: 20),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87),
+                              items: _genderOptions.map((gender) => DropdownMenuItem(value: gender, child: Text(gender))).toList(),
+                              onChanged: (value) => setState(() => _selectedGender = value!),
                             ),
                           ),
+                        ),
+                      ],
+                    ),
+
+                    // --- KONTAK DARURAT ---
+                    _buildSectionHeader('Kontak Darurat'),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildCardField(
+                            label: 'Status Hubungan',
+                            icon: Icons.group_outlined,
+                            child: DropdownButtonFormField<String>(
+                              value: _selectedEmergencyStatus,
+                              decoration: _cleanInputDecoration(),
+                              icon: const Icon(Icons.arrow_drop_down, size: 20),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87),
+                              items: _emergencyStatusOptions.map((status) => DropdownMenuItem(value: status, child: Text(status))).toList(),
+                              onChanged: (value) => setState(() => _selectedEmergencyStatus = value!),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildCardField(
+                            label: 'Nama',
+                            icon: Icons.badge_outlined,
+                            child: TextFormField(
+                              controller: _emergencyNameController,
+                              decoration: _cleanInputDecoration(),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildCardField(
+                      label: 'Nomor Darurat',
+                      icon: Icons.phone_android_outlined,
+                      child: TextFormField(
+                        controller: _emergencyNumberController,
+                        keyboardType: TextInputType.phone,
+                        decoration: _cleanInputDecoration(),
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                        validator: (val) => (val == null || val.isEmpty) ? 'Wajib diisi' : null,
+                      ),
+                    ),
+
+                    // --- ALAMAT ANDA (Desain Spesifik) ---
+                    _buildSectionHeader('Alamat Anda'),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
                         ],
                       ),
-
-                      // --- KONTAK DARURAT ---
-                      _buildSectionHeader('Kontak Darurat'),
-                      Row(
+                      child: Column(
                         children: [
-                          Expanded(
-                            child: _buildCardField(
-                              label: 'Status Hubungan',
-                              icon: Icons.group_outlined,
-                              child: DropdownButtonFormField<String>(
-                                value: _selectedEmergencyStatus,
-                                decoration: _cleanInputDecoration(),
-                                icon: const Icon(Icons.arrow_drop_down, size: 20),
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87),
-                                items: _emergencyStatusOptions.map((status) => DropdownMenuItem(value: status, child: Text(status))).toList(),
-                                onChanged: (value) => setState(() => _selectedEmergencyStatus = value!),
-                              ),
+                          // Field Cari Alamat
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildCardField(
-                              label: 'Nama',
-                              icon: Icons.badge_outlined,
-                              child: TextFormField(
-                                controller: _emergencyNameController,
-                                decoration: _cleanInputDecoration(),
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      _buildCardField(
-                        label: 'Nomor Darurat',
-                        icon: Icons.phone_android_outlined,
-                        child: TextFormField(
-                          controller: _emergencyNumberController,
-                          keyboardType: TextInputType.phone,
-                          decoration: _cleanInputDecoration(),
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                          validator: (val) => (val == null || val.isEmpty) ? 'Wajib diisi' : null,
-                        ),
-                      ),
-
-                      // --- ALAMAT ANDA (Mockup Desain) ---
-                      _buildSectionHeader('Alamat Anda'),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            // Field dummy Cari Alamat
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey.shade300),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.search, color: Colors.grey[400]),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: TextFormField(
-                                      decoration: const InputDecoration(
-                                        hintText: 'Cari Alamat',
-                                        hintStyle: TextStyle(fontSize: 14),
-                                        border: InputBorder.none,
-                                      ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.search, color: Colors.grey[400]),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: TextFormField(
+                                    decoration: const InputDecoration(
+                                      hintText: 'Cari Alamat',
+                                      hintStyle: TextStyle(fontSize: 14),
+                                      border: InputBorder.none,
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            
-                            // --- GAMBAR MAP ASLI ---
-                            Container(
-                              height: 140,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE8EDF2),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey.shade300),
-                                image: DecorationImage(
-                                  // Menggunakan tile dari OpenStreetMap yang mendukung Web (CORS-friendly)
-                                  image: const NetworkImage('https://tile.openstreetmap.org/12/3289/2138.png'),
-                                  fit: BoxFit.cover,
-                                  // Memberikan sedikit efek transparan putih agar pin merah lebih menonjol
-                                  colorFilter: ColorFilter.mode(Colors.white.withOpacity(0.4), BlendMode.lighten),
                                 ),
-                              ),
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  // Pin Lokasi Merah di tengah
-                                  Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(Icons.location_on, color: Colors.redAccent, size: 45),
-                                      const SizedBox(height: 4),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.9),
-                                          borderRadius: BorderRadius.circular(10),
-                                          boxShadow: [
-                                            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2)),
-                                          ],
-                                        ),
-                                        child: const Text(
-                                          'Lokasi Anda',
-                                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black87),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
+                              ],
                             ),
-                            // ------------------------
-
-                            const SizedBox(height: 16),
-                            // Tombol Tandai Lokasi (SEKARANG MEMANGGIL FUNGSI GPS)
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: _isLoadingLocation ? null : _getCurrentLocation,
-                                icon: _isLoadingLocation
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                                      )
-                                    : const Icon(Icons.location_on, color: Colors.white, size: 18),
-                                label: Text(
-                                  _isLoadingLocation ? 'Mencari Lokasi...' : 'Tandai Lokasi Saya Saat Ini', 
-                                  style: const TextStyle(color: Colors.white)
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF9E715D), // Cokelat medium
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                  elevation: 0,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            // Field Detail Alamat Manual (Terhubung ke Controller)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey.shade300),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: TextFormField(
-                                controller: _addressController,
-                                maxLines: 2,
-                                decoration: const InputDecoration(
-                                  hintText: 'Detail Alamat Manual (Unit, RT/RW, Patokan)',
-                                  hintStyle: TextStyle(fontSize: 12),
-                                  border: InputBorder.none,
-                                ),
-                                style: const TextStyle(fontSize: 13),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 40),
-
-                      // --- TOMBOL SIMPAN ---
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _submitProfile,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF693D2C), // Warna MomNJo
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            elevation: 2,
                           ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                                )
-                              : const Text(
-                                  'SIMPAN PERUBAHAN',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.8),
+                          const SizedBox(height: 16),
+                          
+                          // --- KOTAK MAP BIRU MUDA SESUAI DESAIN ---
+                          Container(
+                            height: 140,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFDCE5E7), // Warna biru muda polos sesuai desain
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                // Pin Lokasi & Teks
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.location_on, color: Color(0xFFFF5252), size: 45), // Merah terang
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(20), // Pill shape
+                                        boxShadow: [
+                                          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2)),
+                                        ],
+                                      ),
+                                      child: const Text(
+                                        'Lokasi Anda',
+                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                        ),
+                              ],
+                            ),
+                          ),
+                          // ------------------------
+
+                          const SizedBox(height: 16),
+                          // Tombol Tandai Lokasi
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: _isLoadingLocation ? null : _getCurrentLocation,
+                              icon: _isLoadingLocation
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.location_on, color: Colors.white, size: 18),
+                              label: Text(
+                                _isLoadingLocation ? 'Mencari Lokasi...' : 'Tandai Lokasi Saya Saat Ini', 
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF966A55), // Coklat medium pas dengan desain
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                elevation: 0,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          
+                          // Field Detail Alamat Manual
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: TextFormField(
+                              controller: _addressController,
+                              maxLines: 2,
+                              decoration: const InputDecoration(
+                                hintText: 'Detail Alamat Manual (Unit, RT/RW, Patokan)',
+                                hintStyle: TextStyle(fontSize: 13, color: Colors.grey),
+                                border: InputBorder.none,
+                                isDense: true,
+                              ),
+                              style: const TextStyle(fontSize: 13, color: Colors.black87),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    // --- TOMBOL SIMPAN ---
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _submitProfile,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF5E392A), // Coklat gelap senada header
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              )
+                            : const Text(
+                                'SIMPAN PERUBAHAN',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.8),
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
