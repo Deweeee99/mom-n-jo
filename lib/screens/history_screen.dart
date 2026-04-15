@@ -378,19 +378,27 @@ $noTelp
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Text(
-                    'TRANSACTION : ${trx['id_transaksi']}', // Dummy prefix TRX26 biar mirip mockup
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.black87,
+              // BRAY: INI DIA FIX-NYA! Pake Expanded & Flexible biar teks ga bablas
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        'TRANSACTION : ${trx['id_transaksi']}', // Dummy prefix TRX26 biar mirip mockup
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis, // Kalo mentok jadi titik-titik
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.auto_awesome, color: Color(0xFFDBA38C), size: 16),
-                ],
+                    const SizedBox(width: 4),
+                    const Icon(Icons.auto_awesome, color: Color(0xFFDBA38C), size: 16),
+                    const SizedBox(width: 8),
+                  ],
+                ),
               ),
               Text(
                 formattedDate,

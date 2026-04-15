@@ -758,8 +758,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      // Body sekarang dinamis berdasarkan indeks tab yang dipilih
-      body: pages[_currentIndex],
+      // BRAY: Body sekarang pake IndexedStack biar halamannya ditumpuk dan ga loading ulang dari nol!
+      body: IndexedStack(
+        index: _currentIndex,
+        children: pages,
+      ),
     );
   }
 }

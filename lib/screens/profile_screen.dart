@@ -15,7 +15,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -29,6 +28,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
   bool _isLoggedIn = false;
   String _fullname = '';
   String _idCustomer = '';
+  int _notifCount = 0; // Tambahan state buat notifikasi
 
   // API endpoints - sesuaikan bila perlu
   final String deleteApiUrl = 'https://app.momnjo.com/api/delete_account.php';
@@ -67,21 +67,6 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     _forceLogoutOnReload();
   }
 
-  // Lifecycle handler: schedule auto-logout on background/inactive/detached (debounced)
-  @override
-  // void didChangeAppLifecycleState(AppLifecycleState state) {
-  //   if (state == AppLifecycleState.inactive ||
-  //       state == AppLifecycleState.paused ||
-  //       state == AppLifecycleState.detached) {
-  //     _autoLogoutTimer?.cancel();
-  //     _autoLogoutTimer = Timer(const Duration(seconds: 1), () {
-  //       _forceLogoutOnReload();
-  //     });
-  //   } else if (state == AppLifecycleState.resumed) {
-  //     _autoLogoutTimer?.cancel();
-  //   }
-  // }
-
   Future<void> _forceLogoutOnReload() async {
     if (!mounted) return;
     final prefs = await SharedPreferences.getInstance();
@@ -116,6 +101,27 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
       _fullname = prefs.getString('fullname') ?? 'No Name';
       _idCustomer = prefs.getString('id_customer') ?? 'Unknown';
     });
+    _fetchNotifCount(); // Ambil jumlah notifikasi setelah idCustomer dapet
+  }
+
+  // Fungsi tambahan buat nembak API notifikasi
+  Future<void> _fetchNotifCount() async {
+    if (_idCustomer.isEmpty || _idCustomer == 'Unknown') return;
+    final url = Uri.parse(
+        "https://app.momnjo.com/api/get_notifications.php?id_customer=$_idCustomer");
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        if (mounted) {
+          setState(() {
+            _notifCount = data.length;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error fetching notif count: $e");
+    }
   }
 
   Future<void> _logout() async {
@@ -447,25 +453,29 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
             children: [
               IconButton(
                 icon: const Icon(Icons.notifications_none, color: Colors.black),
-                onPressed: () {},
+                onPressed: () {
+                  // Arahin ke halaman notifikasi!
+                  Navigator.pushNamed(context, '/ListNotifScreen');
+                },
               ),
-              Positioned(
-                right: 12,
-                top: 12,
-                child: Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
+              if (_notifCount > 0) // Tampilkan hanya kalo notif > 0
+                Positioned(
+                  right: 12,
+                  top: 12,
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    child: Text(
+                      '$_notifCount',
+                      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                  child: const Text(
-                    '2',
-                    style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              )
+                )
             ],
           ),
           const SizedBox(width: 8),
@@ -542,7 +552,12 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
             const SizedBox(height: 24),
 
             // Daftar Menu
-            _buildProfileItem('Edit Profile', onTap: () => Navigator.pushNamed(context, '/editprofile')),
+            // BRAY: Di sini kita tambahin 'await' dan panggil ulang fungsi _loadUserData biar otomatis refresh datanya
+            _buildProfileItem('Edit Profile', onTap: () async {
+              await Navigator.pushNamed(context, '/editprofile');
+              // Refresh data setelah balik dari halaman edit
+              _loadUserData();
+            }),
             _buildProfileItem('Ganti Password', onTap: () => _showChangePasswordDialog()),
             _buildProfileItem('Promo', onTap: () => _launchURL("https://www.momnjo.com/promo")),
             _buildProfileItem('MPC Member Area', onTap: () => _launchURL("https://www.momnjo.com/mpc")),
@@ -587,4 +602,4 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
       // dengan navbar yang ada di parent screen.
     );
   }
-}
+} 

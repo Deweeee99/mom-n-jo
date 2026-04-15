@@ -17,14 +17,39 @@ import 'screens/subcategory_screen.dart';
 import 'screens/booking_treatment_screen.dart';
 import 'screens/booking_detail_screen.dart';
 import 'screens/category_screen.dart';
-import 'screens/member_status_screen.dart'; // <-- Import screen baru
+import 'screens/member_status_screen.dart'; 
 import 'screens/faq_screen.dart';
 import 'screens/contact_us_screen.dart';
 import 'screens/termsofservice_screen.dart';
 import 'screens/NotificationDetailScreen.dart';
 import 'screens/list_notif_screen.dart';
-import 'screens/upload_payment_screen.dart'; // Pastikan path-nya benar
-import 'screens/splash_screen.dart'; // <-- IMPORT SPLASH SCREEN BARU
+import 'screens/upload_payment_screen.dart'; 
+import 'screens/splash_screen.dart'; 
+
+// ---> BRAY: Kita ganti jadi animasi FADE (Memudar) biar perpindahan halamannya 
+// kelihatan super smooth dan elegan, serta nutupin lag render UI. <---
+class SmoothFadePageTransitionsBuilder extends PageTransitionsBuilder {
+  const SmoothFadePageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return FadeTransition(
+      opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic, // Curve memudar yang paling smooth
+        ),
+      ),
+      child: child,
+    );
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,11 +64,20 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'MomNJo App',
-      debugShowCheckedModeBanner: false, // Ngilangin pita "DEBUG" di pojok
-      theme: ThemeData(primaryColor: const Color(0xFF693D2C)),
-      initialRoute: '/splash', // <-- UBAH KE SPLASH DULUAN
+      debugShowCheckedModeBanner: false, 
+      theme: ThemeData(
+        primaryColor: const Color(0xFF693D2C),
+        // ---> BRAY: Terapin efek Smooth Fade ke semua platform <---
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: SmoothFadePageTransitionsBuilder(),
+            TargetPlatform.iOS: SmoothFadePageTransitionsBuilder(),
+          },
+        ),
+      ),
+      initialRoute: '/splash', 
       routes: {
-        '/splash': (context) => const SplashScreen(), // <-- DAFTARIN ROUTE-NYA
+        '/splash': (context) => const SplashScreen(), 
         '/': (context) => const HomeScreen(),
         '/home': (context) => const HomeScreen(),
         '/login': (context) => const LoginScreen(),
@@ -61,17 +95,15 @@ class MyApp extends StatelessWidget {
         '/FAQScreen': (context) => const FAQScreen(),
         '/ContactUsScreen': (context) => const ContactUsScreen(),
         '/TermsOfServiceScreen': (context) => const TermsOfServiceScreen(),
-        '/NotificationDetailScreen': (context) =>
-            const NotificationDetailScreen(),
+        '/NotificationDetailScreen': (context) => const NotificationDetailScreen(),
         '/ListNotifScreen': (context) => const ListNotifScreen(),
-        // Tambahkan route baru untuk Member Status
         '/member_status': (context) => const MemberStatusScreen(),
+        
         '/UploadPaymen': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments
-              as Map<String, dynamic>;
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
           return UploadPaymentScreen(idTransaksi: args['idTransaksi']);
         },
-        // Route untuk SubcategoryScreen
+
         '/subcategory': (context) {
           final route = ModalRoute.of(context);
           if (route == null) return const SubcategoryScreen(categoryId: 0);
@@ -94,7 +126,6 @@ class MyApp extends StatelessWidget {
           );
         },
 
-        // Route untuk BookingTreatmentScreen
         '/booking_treatment': (context) {
           final route = ModalRoute.of(context);
           if (route == null) {
@@ -117,7 +148,6 @@ class MyApp extends StatelessWidget {
               : int.tryParse(subcatIdValue.toString()) ?? 0;
           final subcatName = rawArgs['subcategoryName'] as String? ?? 'Unknown';
           
-          // ---> INI DIA FIX-NYA bray: Nangkep keranjang lama <---
           final bookingData = rawArgs['bookingData']; 
 
           debugPrint(
@@ -126,11 +156,10 @@ class MyApp extends StatelessWidget {
           return BookingTreatmentScreen(
             subcategoryId: subcategoryId,
             subcategoryName: subcatName,
-            bookingData: bookingData, // <-- Oper keranjang lamanya ke halaman treatment
+            bookingData: bookingData, 
           );
         },
 
-        // Route untuk BookingDetailScreen
         '/booking_detail': (context) {
           final route = ModalRoute.of(context);
           if (route == null) return BookingDetailScreen(bookingData: const {});
@@ -143,7 +172,6 @@ class MyApp extends StatelessWidget {
           return BookingDetailScreen(bookingData: rawArgs);
         },
 
-        // Route untuk CategoryScreen (daftar kategori)
         '/kategori': (context) {
           final route = ModalRoute.of(context);
           final rawArgs = route?.settings.arguments;

@@ -104,7 +104,7 @@ class _VoucherScreenState extends State<VoucherScreen> {
     return Scaffold(
       backgroundColor: _bgColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFEAD8C0), // Header warna peach/krim Tuan
+        backgroundColor:Colors.white, // Header warna peach/krim Tuan
         elevation: 2,
         shadowColor: Colors.black26,
         centerTitle: true,
