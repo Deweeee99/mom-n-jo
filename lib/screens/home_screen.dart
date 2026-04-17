@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:salomon_bottom_bar/salomon_bottom_bar.dart'; // <-- Package animasi kita balikin!
+import 'package:salomon_bottom_bar/salomon_bottom_bar.dart'; 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -56,7 +56,7 @@ Future<void> _launchURL(String url) async {
   }
 }
 
-/// Fungsi navigasi dengan loading (Kita pake ini lagi biar ga double footer)
+/// Fungsi navigasi dengan loading
 void navigateWithLoading(BuildContext context, String routeName,
     {Object? arguments, bool replace = false}) {
   showDialog(
@@ -212,12 +212,9 @@ class _HomeScreenState extends State<HomeScreen> {
         List<dynamic> data = json.decode(response.body);
         return data.map((json) => Branch.fromJson(json)).toList();
       } else {
-        print('Error status code: ${response.statusCode}');
-        print('Error response body: ${response.body}');
         throw Exception('Failed to load branches');
       }
     } catch (e) {
-      print('Error fetching branches: $e');
       return [];
     }
   }
@@ -239,12 +236,9 @@ class _HomeScreenState extends State<HomeScreen> {
         List<dynamic> data = json.decode(response.body);
         return data.map((json) => Category.fromJson(json)).toList();
       } else {
-        print('Error status code: ${response.statusCode}');
-        print('Error response body: ${response.body}');
         throw Exception('Failed to load categories');
       }
     } catch (e) {
-      print("Error fetching categories: $e");
       return [];
     }
   }
@@ -271,28 +265,40 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         }
       } catch (e) {
-        print("Error fetching notif count: $e");
+        debugPrint("Error fetching notif count: $e");
       }
     }
   }
 
-  Future<void> logout(BuildContext context) async {
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setBool('isLoggedIn', false);
-    navigateWithLoading(context, '/login', replace: true);
+  Map<String, dynamic> _getCategoryInfo(String categoryName) {
+    String name = categoryName.toLowerCase();
+    if (name.contains('mom to be') || name.contains('pregnancy')) {
+      return {'subtitle': 'Nurture Your Pregnancy', 'icon': Icons.pregnant_woman};
+    } else if (name.contains('labour') || name.contains('after')) {
+      return {'subtitle': 'Recover & Rejuvenate', 'icon': Icons.baby_changing_station};
+    } else if (name.contains('baby') || name.contains('bayi')) {
+      return {'subtitle': 'Gentle Care for Happy Baby', 'icon': Icons.child_care};
+    } else if (name.contains('kid') || name.contains('child') || name.contains('anak')) {
+      return {'subtitle': 'Fun & Relaxing Treatments', 'icon': Icons.face};
+    } else if (name.contains('him') || name.contains('her') || name.contains('couple')) {
+      return {'subtitle': 'Relax Together, Stronger Together', 'icon': Icons.people_outline};
+    } else if (name.contains('all') || name.contains('service')) {
+      return {'subtitle': 'Explore All Spa Services', 'icon': Icons.grid_view_rounded};
+    } else {
+      return {'subtitle': 'Best Treatment for You', 'icon': Icons.spa_outlined};
+    }
   }
 
-  // Widget bantuan untuk judul: Padding dikurangin abis-abisan biar mepet banget
   Widget _buildSectionTitle(String imagePath, {bool showGirlIcon = false}) {
     return Padding(
       // Top 0 & Bottom 4 biar bener-bener rapat ke card di bawahnya
-      padding: const EdgeInsets.only(top: 0, bottom: 4),
+      padding: const EdgeInsets.only(top: 0, bottom: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.asset(
             imagePath,
-            height: 40, // Tinggi diturunin dikit biar keliatan rapet
+            height: 35, // Disesuaikan tingginya biar proporsional
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) => const Text(
               'Aset Gambar Hilang', 
@@ -303,8 +309,8 @@ class _HomeScreenState extends State<HomeScreen> {
           if (showGirlIcon) ...[
             const SizedBox(width: 6),
             Image.asset(
-              'assets/images/icon_perempuan.jpg',
-              width: 35, // Dikecilin proporsional
+              'assets/images/icon_perempuan.png',
+              width: 35, 
               height: 35,
               errorBuilder: (context, error, stackTrace) => const Icon(Icons.face_retouching_natural, color: Color(0xFF8B9A76), size: 26),
             )
@@ -314,7 +320,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // FUNGSI INI ADALAH BODY UTAMA UNTUK HOME
   Widget _buildHomeBody() {
     return SingleChildScrollView(
       child: Column(
@@ -342,11 +347,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
 
               SafeArea(
+                bottom: false, 
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 5), // Bawah dikurangin
+                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 5),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -388,9 +394,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               IconButton(
                                 icon: const Icon(Icons.search, color: Colors.white, size: 28),
-                                onPressed: () {
-                                  // Aksi pencarian
-                                },
+                                onPressed: () {},
                               ),
                             ],
                           ),
@@ -412,7 +416,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               letterSpacing: 0.5,
                             ),
                           ),
-                          const SizedBox(height: 2), // Rapatkan ke subtitle
+                          const SizedBox(height: 2),
                           const Text(
                             'How can we help you today?',
                             style: TextStyle(
@@ -424,7 +428,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     
-                    const SizedBox(height: 15), // Dikecilin biar banner naik
+                    const SizedBox(height: 10), 
 
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -470,29 +474,33 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           
-          const SizedBox(height: 8), // Sedikit jarak dari banner atas ke judul
+          const SizedBox(height: 5), 
 
-          _buildSectionTitle('assets/txt-recommended-service.png', showGirlIcon: true),
+          // ---> BRAY: Dibuat jadi false / gausah showGirlIcon biar ga dobel gambar gaibnya! <---
+          _buildSectionTitle('assets/txt-recommended-service.png', showGirlIcon: false),
 
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: _categories.isEmpty
                 ? const Center(child: CircularProgressIndicator(color: Color(0xFF693D2C)))
                 : GridView.builder(
+                    padding: EdgeInsets.zero, 
                     itemCount: _categories.length,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 12, // Dikecilin biar antar card makin deket
-                      childAspectRatio: 0.85, 
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 14,
+                      childAspectRatio: 1.5, 
                     ),
                     itemBuilder: (BuildContext context, int index) {
                       final category = _categories[index];
                       final baseUrl = 'https://app.momnjo.com/assets/foto_kategori/';
                       final fullImageUrl = '$baseUrl${category.image}';
                       
+                      final info = _getCategoryInfo(category.name);
+
                       return GestureDetector(
                         onTap: () {
                           final categoryId = int.tryParse(category.id.toString()) ?? 0;
@@ -507,66 +515,99 @@ class _HomeScreenState extends State<HomeScreen> {
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
-                                blurRadius: 10,
-                                spreadRadius: 2,
-                                offset: const Offset(0, 5),
+                                color: Colors.black.withOpacity(0.06),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Expanded(
-                                flex: 3,
-                                child: ClipRRect(
-                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                                  child: Image.network(
-                                    fullImageUrl,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        color: Colors.grey[200],
-                                        child: const Icon(Icons.spa_outlined, size: 40, color: Color(0xFFB5937B)),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 2,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), // Margin text di card dipres
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(6),
-                                        decoration: const BoxDecoration(
-                                          color: Color(0xFFF9EAE1),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(Icons.face_retouching_natural, color: Color(0xFFB5937B), size: 18),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Stack(
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    Expanded(
+                                      child: Image.network(
+                                        fullImageUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Container(
+                                            color: Colors.grey[200],
+                                            child: const Icon(Icons.spa_outlined, size: 30, color: Color(0xFFB5937B)),
+                                          );
+                                        },
                                       ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          category.name.toUpperCase(),
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF693D2C),
-                                            height: 1.2,
+                                    ),
+                                    Container(
+                                      height: 50, 
+                                      color: Colors.white,
+                                      padding: const EdgeInsets.only(left: 48, right: 8, top: 6, bottom: 4), 
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Text(
+                                                  category.name.toUpperCase(),
+                                                  style: const TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w900,
+                                                    color: Color(0xFF693D2C),
+                                                    letterSpacing: 0.5,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                Text(
+                                                  info['subtitle'],
+                                                  style: TextStyle(
+                                                    fontSize: 8.5,
+                                                    color: Colors.grey.shade600,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
+                                          Icon(Icons.chevron_right, color: Colors.red.shade200, size: 16),
+                                        ],
                                       ),
-                                      const Icon(Icons.chevron_right, color: Colors.grey, size: 16),
-                                    ],
+                                    ),
+                                  ],
+                                ),
+                                Positioned(
+                                  left: 8,
+                                  bottom: 50 - 18, 
+                                  child: Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.grey.shade200, width: 1.5),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Icon(
+                                      info['icon'], 
+                                      color: const Color(0xFFB5937B), 
+                                      size: 18,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       );
@@ -574,12 +615,43 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
           ),
           
-          const SizedBox(height: 5), // Sangat rapat
+          const SizedBox(height: 16), 
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 15,
+                    offset: const Offset(0, 8),
+                  )
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.asset(
+                  'assets/promo.png',
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: 120,
+                    color: const Color(0xFFDEBC9E),
+                    child: const Center(child: Text("PROMO Banner", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24), 
 
           _buildSectionTitle('assets/txt-branches.png', showGirlIcon: false),
 
           Padding(
-            padding: const EdgeInsets.only(bottom: 0), // Pangkas habis
+            padding: const EdgeInsets.only(bottom: 0),
             child: _branches.isEmpty
                 ? const Center(child: CircularProgressIndicator(color: Color(0xFF693D2C)))
                 : CarouselSlider.builder(
@@ -592,7 +664,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           navigateWithLoading(context, '/gerai_screen', arguments: branchId);
                         },
                         child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6), // Vertical dikecilin banget
+                          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
@@ -642,7 +714,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     },
                     options: CarouselOptions(
-                      height: 180, // Tinggi slider dikurangin dikit
+                      height: 180,
                       enlargeCenterPage: true,
                       enableInfiniteScroll: true,
                       autoPlay: true,
@@ -652,9 +724,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
           ),
 
-          const SizedBox(height: 5), // Sangat rapat
+          const SizedBox(height: 24), 
 
-          _buildSectionTitle('assets/txt-home-service.png', showGirlIcon: true),
+          // ---> BRAY: Ini juga di false biar bersih <---
+         // _buildSectionTitle('assets/txt-home-service.png', showGirlIcon: false),
 
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -685,7 +758,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           
-          // Ganjelan masih disisakan biar ga mentok footer yang melar
           const SizedBox(height: 120), 
         ],
       ),
@@ -694,74 +766,110 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // List halaman untuk navigasi internal (Shell)
-    // Pastikan kelas-kelas ini (BookingScreen, dkk) beneran ada dari import di atas.
     final List<Widget> pages = [
-      _buildHomeBody(),         // Index 0: Tampilan Utama Home
-      const BookingScreen(),    // Index 1: Schedule
-      const GiftScreen(),       // Index 2: Package
-      const VoucherScreen(),    // Index 3: Ticket
-      const ProfileScreen(),    // Index 4: Profile
+      _buildHomeBody(),       
+      const BookingScreen(),    
+      const GiftScreen(),       
+      const VoucherScreen(),    
+      const ProfileScreen(),    
     ];
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF8F4),
       extendBody: true, 
-      // Footer kembali menggunakan SalomonBottomBar biar animasinya idup lagi
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            )
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          child: SalomonBottomBar(
-            currentIndex: _currentIndex,
-            onTap: (index) {
-              setState(() {
-                _currentIndex = index; // Cukup ganti index, nggak usah push route lagi!
-              });
-            },
-            selectedItemColor: const Color(0xFF693D2C),
-            unselectedItemColor: Colors.grey.shade600,
-            itemPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            items: [
-              SalomonBottomBarItem(
-                icon: const Icon(Icons.home_filled),
-                title: const Text("Home"),
+      
+      bottomNavigationBar: Stack(
+        clipBehavior: Clip.none, 
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -5),
+                )
+              ],
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: SafeArea(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                child: SalomonBottomBar(
+                  currentIndex: _currentIndex,
+                  onTap: (index) {
+                    setState(() {
+                      _currentIndex = index;
+                    });
+                  },
+                  selectedItemColor: const Color(0xFF693D2C),
+                  unselectedItemColor: Colors.grey.shade600,
+                  itemPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  items: [
+                    SalomonBottomBarItem(
+                      icon: const Icon(Icons.home_filled),
+                      title: const Text("Home"),
+                    ),
+                    SalomonBottomBarItem(
+                      icon: const Icon(Icons.calendar_today_outlined),
+                      title: const Text("Schedule"), 
+                    ),
+                    SalomonBottomBarItem(
+                      icon: const Icon(Icons.card_giftcard_outlined),
+                      title: const Text("Package"), 
+                    ),
+                    SalomonBottomBarItem(
+                      icon: const Icon(Icons.confirmation_number_outlined),
+                      title: const Text("Ticket"), 
+                    ),
+                    SalomonBottomBarItem(
+                      icon: const Icon(Icons.person_outline),
+                      title: const Text("Profile"),
+                    ),
+                  ],
+                ),
               ),
-              SalomonBottomBarItem(
-                icon: const Icon(Icons.calendar_today_outlined),
-                title: const Text("Schedule"), 
-              ),
-              SalomonBottomBarItem(
-                icon: const Icon(Icons.card_giftcard_outlined),
-                title: const Text("Package"), 
-              ),
-              SalomonBottomBarItem(
-                icon: const Icon(Icons.confirmation_number_outlined),
-                title: const Text("Ticket"), 
-              ),
-              SalomonBottomBarItem(
-                icon: const Icon(Icons.person_outline),
-                title: const Text("Profile"),
-              ),
-            ],
+            ),
           ),
-        ),
+
+          // ---> BRAY: UDAH DIGANTI JADI icon_footer.png YA! <---
+          if (_currentIndex == 0) 
+            Positioned(
+              bottom: 38, 
+              right: -20,   
+              child: IgnorePointer( 
+                child: Image.asset(
+                  'assets/images/icon_footer.png', // Pake aset baru dari Tuan!
+                  width: 140, 
+                  errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                ),
+              ),
+            ),
+        ],
       ),
-      // BRAY: Body sekarang pake IndexedStack biar halamannya ditumpuk dan ga loading ulang dari nol!
-      body: IndexedStack(
-        index: _currentIndex,
-        children: pages,
+      
+      // ---> BRAY: BODY SEKARANG DIBUNGKUS STACK BIAR BISA DIKASIH BACKGROUND GARIS <---
+      body: Stack(
+        children: [
+          // Background bg_garis.png
+          Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/images/bg_garis.png'), // Aset dari Tuan
+                fit: BoxFit.cover,
+                opacity: 0.3, // Tuan bisa atur tebel/tipis garisnya di sini (0.1 - 1.0)
+              ),
+            ),
+          ),
+          
+          // Konten Utama
+          IndexedStack(
+            index: _currentIndex,
+            children: pages,
+          ),
+        ],
       ),
     );
   }

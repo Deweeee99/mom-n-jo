@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+// --- IMPORT SEMUA SCREENS ---
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/booking_screen.dart';
@@ -25,8 +27,12 @@ import 'screens/NotificationDetailScreen.dart';
 import 'screens/list_notif_screen.dart';
 import 'screens/upload_payment_screen.dart'; 
 import 'screens/splash_screen.dart'; 
+import 'screens/profile_selection_screen.dart'; // Screen pilih profil
+import 'screens/add_profile_personal_screen.dart'; // Screen form personal details
+import 'screens/add_profile_emergency_screen.dart'; // Screen form emergency contact
+import 'screens/add_profile_medical_screen.dart'; // Screen form medical history
 
-// ---> BRAY: Kita ganti jadi animasi FADE (Memudar) biar perpindahan halamannya 
+// ---> BRAY: Animasi FADE (Memudar) biar perpindahan halamannya 
 // kelihatan super smooth dan elegan, serta nutupin lag render UI. <---
 class SmoothFadePageTransitionsBuilder extends PageTransitionsBuilder {
   const SmoothFadePageTransitionsBuilder();
@@ -98,6 +104,10 @@ class MyApp extends StatelessWidget {
         '/NotificationDetailScreen': (context) => const NotificationDetailScreen(),
         '/ListNotifScreen': (context) => const ListNotifScreen(),
         '/member_status': (context) => const MemberStatusScreen(),
+        
+        // ---> BRAY: ROUTE BARU BUAT FITUR FAMILY PROFILE <---
+        '/profile_selection': (context) => const ProfileSelectionScreen(),
+        '/add_profile_personal': (context) => const AddProfilePersonalScreen(),
         
         '/UploadPaymen': (context) {
           final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
@@ -180,6 +190,17 @@ class MyApp extends StatelessWidget {
           }
           debugPrint("DEBUG: /kategori, args: $rawArgs");
           return CategoryScreen(bookingData: rawArgs);
+        },
+
+        // ---> BRAY: Route buat passing data dari layar ke layar pas bikin profil <---
+        '/add_profile_emergency': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          return AddProfileEmergencyScreen(personalData: args);
+        },
+
+        '/add_profile_medical': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          return AddProfileMedicalScreen(previousData: args);
         },
       },
     );

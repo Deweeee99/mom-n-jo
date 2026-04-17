@@ -123,7 +123,7 @@ class _VoucherScreenState extends State<VoucherScreen> {
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
-                image: AssetImage('assets/images/bg_landing.png'),
+                image: AssetImage('assets/images/bg_garis.png'),
                 fit: BoxFit.cover,
                 opacity: 0.15,
               ),
@@ -315,7 +315,7 @@ class _VoucherScreenState extends State<VoucherScreen> {
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
-                image: AssetImage('assets/images/bg_landing.png'),
+                image: AssetImage('assets/images/bg_garis.png'),
                 fit: BoxFit.cover,
                 opacity: 0.15,
               ),

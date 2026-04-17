@@ -54,9 +54,12 @@ flutter:
     - assets/txt-video-treatment.png
     - assets/bookbg.png
     - assets/wa.png
+    - assets/icon.png
     - assets/images/
     - assets/images/bg_login.png
     - assets/images/logo_momnjo.png
     - assets/images/icon_laki.png
     - assets/images/icon_perempuan.png
     - assets/images/bg_landing.png
+    - assets/images/icon_footer.png
+    - assets/images/bg_garis.png

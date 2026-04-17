@@ -155,7 +155,7 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
                           ),
                           child: Row(
                             children: [
-                              // Ikon di kiri (Gaya Desain)
+                              // Ikon di kiri (Ganti pake aset gambar dari Tuan)
                               Container(
                                 width: 50,
                                 height: 50,
@@ -163,11 +163,18 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
                                   color: _iconBgColor,
                                   borderRadius: BorderRadius.circular(14),
                                 ),
-                                child: Icon(
-                                  // Ikon default karena dari API nggak ada gambar
-                                  Icons.spa_outlined, 
-                                  color: _primaryColor,
-                                  size: 26,
+                                child: Center(
+                                  child: Image.asset(
+                                    'assets/icon.png', // Aset gambar yang Tuan minta
+                                    width: 28, // Ukuran disesuaikan biar pas di dalam kotak
+                                    height: 28,
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (context, error, stackTrace) => Icon(
+                                      Icons.spa_outlined, // Fallback icon kalo gambarnya gagal dimuat
+                                      color: _primaryColor,
+                                      size: 26,
+                                    ),
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 16),

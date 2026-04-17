@@ -26,6 +26,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
   // untuk auto-expire
   Timer? _timer;
   final Set<String> _expiredTransactions = {};
+  
+  // Ilusi sementara saat nunggu update backend
+  final Set<String> _pendingVerification = {}; 
 
   // identitas (rekening, whatsapp, email, nama_website, no_telp)
   Map<String, dynamic>? _identitasData;
@@ -39,7 +42,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void initState() {
     super.initState();
     _checkLoginAndFetch();
-    _fetchIdentitas(); // ambil rekening + WA dari API
+    _fetchIdentitas(); 
 
     // Update setiap detik untuk countdown real-time
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -82,8 +85,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
+        
+        // ---> BRAY: KITA FILTER ONGOING & COMPLETED BIAR GA MUNCUL DI SINI <---
+        final filteredData = data.where((item) {
+          final status = (item['status'] ?? '').toString().toLowerCase();
+          return status != 'ongoing' && status != 'completed';
+        }).toList();
+
         setState(() {
-          _listTransaksi = data;
+          _listTransaksi = filteredData;
         });
       } else {
         debugPrint('Failed to load data. Status: ${response.statusCode}');
@@ -110,6 +120,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
       }
     } catch (e) {
       debugPrint('[HistoryScreen] Exception fetchIdentitas: $e');
+    }
+  }
+
+  // API Baru buat nge-hide transaksi yang di-swipe
+  Future<void> _hideHistory(String idTransaksi) async {
+    final url = Uri.parse('https://app.momnjo.com/api/hide_history.php');
+    try {
+      await http.post(
+        url,
+        body: {
+          'id_transaksi': idTransaksi,
+          'id_customer': _idCustomer,
+        },
+      );
+    } catch (e) {
+      debugPrint('Error hiding history: $e');
     }
   }
 
@@ -168,10 +194,19 @@ $noTelp
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text("Informasi Pembayaran", style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
-        content: SingleChildScrollView(
-          child: Text(pesan, style: const TextStyle(fontSize: 14, height: 1.4)),
+        title: Text(
+          "Informasi Pembayaran", 
+          textAlign: TextAlign.center, 
+          style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)
         ),
+        content: SingleChildScrollView(
+          child: Text(
+            pesan, 
+            textAlign: TextAlign.center, 
+            style: const TextStyle(fontSize: 14, height: 1.4)
+          ),
+        ),
+        actionsAlignment: MainAxisAlignment.center, 
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -196,7 +231,7 @@ $noTelp
             (item) => item['id_transaksi'].toString() == idTransaksi,
           );
           if (index != -1) {
-            _listTransaksi[index]['status'] = 'Deleted';
+            _listTransaksi[index]['status'] = 'cancelled';
           }
         });
       }
@@ -205,16 +240,21 @@ $noTelp
     }
   }
 
-  // FUNGSI CANCEL BOOKING YANG BARU DIJADIKAN TOMBOL
   Future<void> _cancelBooking(Map<String, dynamic> trx) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Batalkan Booking', style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
+        title: Text(
+          'Batalkan Booking', 
+          textAlign: TextAlign.center,
+          style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)
+        ),
         content: const Text(
           'Apakah anda yakin untuk membatalkan booking ini?',
+          textAlign: TextAlign.center,
         ),
+        actionsAlignment: MainAxisAlignment.center,
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -248,11 +288,11 @@ $noTelp
               (item) => item['id_transaksi'].toString() == trx['id_transaksi'],
             );
             if (index != -1) {
-              _listTransaksi[index]['status'] = 'Deleted';
+              _listTransaksi[index]['status'] = 'cancelled'; 
             }
           });
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Booking berhasil dibatalkan.')),
+            const SnackBar(content: Text('Booking berhasil dibatalkan. Anda bisa menggeser kartu untuk menghapusnya.')),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -268,6 +308,7 @@ $noTelp
   }
 
   Widget _buildTransaksiCard(Map<String, dynamic> trx) {
+    final String trxId = trx['id_transaksi'].toString();
     final String statusRaw = (trx['status'] ?? '').toString().toLowerCase();
 
     DateTime bookingStart;
@@ -288,21 +329,21 @@ $noTelp
     Duration timeLeft = deadline.difference(now);
     bool isExpired = now.isAfter(deadline);
 
+    // Kalo expired dan status belum dibatalkan
     if (timeLeft.inSeconds <= 0 &&
-        !_expiredTransactions.contains(trx['id_transaksi'].toString()) &&
+        !_expiredTransactions.contains(trxId) &&
         statusRaw != "deleted" &&
-        statusRaw != "delete") {
-      _expiredTransactions.add(trx['id_transaksi'].toString());
+        statusRaw != "delete" &&
+        statusRaw != "cancelled") {
+      _expiredTransactions.add(trxId);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _autoExpireBooking(trx);
       });
     }
 
-    // Format Tanggal dan Jam
     String formattedDate = DateFormat('dd MMM yyyy').format(bookingStart);
     String timeStr = trx['jam'] != null ? trx['jam'].toString().substring(0, 5) : '';
 
-    // SETUP STATUS BADGE & INFO TEXT
     Color badgeBgColor = Colors.grey.shade200;
     Color badgeTextColor = Colors.grey.shade700;
     String badgeText = "UNKNOWN";
@@ -310,53 +351,98 @@ $noTelp
     Color infoColor = Colors.black87;
 
     bool showCountdown = false;
+    bool isUploadPayment = false;
+    bool showViewDetail = false;
+    bool showCancelButton = false;
 
-    if (statusRaw == "booking") {
-      badgeBgColor = const Color(0xFFFDECDA); // Light orange/peach
-      badgeTextColor = const Color(0xFFD68A59); // Orange text
-      badgeText = "PENDING";
-      infoText = "Waiting for branch confirmation";
-      infoColor = const Color(0xFFB57C4A);
-    } else if (statusRaw == "acc") {
+    // Ilusi jika backend telat update status jadi payment review
+    bool isIllusionVerifying = _pendingVerification.contains(trxId);
+
+    // ==========================================================
+    // BRAY: INI LOGIKA FLOW STATUS BARU SESUAI REQUEST LU
+    // ==========================================================
+    if (isIllusionVerifying || statusRaw == "payment review") {
+      badgeBgColor = Colors.deepPurple.shade50;
+      badgeTextColor = Colors.deepPurple.shade700;
+      badgeText = "PAYMENT REVIEW";
+      infoText = "Pembayaran Anda sedang diverifikasi admin.";
+      infoColor = Colors.deepPurple.shade700;
+      
+      showViewDetail = true; 
+      showCancelButton = false;
+    } else if (statusRaw == "waiting payment" || statusRaw == "acc") {
       badgeBgColor = Colors.blue.shade50;
       badgeTextColor = Colors.blue.shade700;
       badgeText = "WAITING PAYMENT";
-      infoText = "Please pay DP IDR 100.000";
+      infoText = "Silakan upload bukti pembayaran (DP/Lunas).";
       infoColor = Colors.blue.shade700;
-      if (!isExpired) showCountdown = true;
-    } else if (statusRaw == "open") {
+      
+      if (!isExpired) {
+        showCountdown = true;
+        isUploadPayment = true; 
+        showViewDetail = true;
+        showCancelButton = true;
+      }
+    } else if (statusRaw == "confirmed") {
+      badgeBgColor = Colors.indigo.shade50;
+      badgeTextColor = Colors.indigo.shade700;
+      badgeText = "CONFIRMED";
+      infoText = "Jadwal tersedia. Melanjutkan ke pembayaran...";
+      infoColor = Colors.indigo.shade700;
+      
+      showViewDetail = true;
+      showCancelButton = !isExpired;
+    } else if (statusRaw == "pending" || statusRaw == "booking") {
+      badgeBgColor = const Color(0xFFFDECDA); 
+      badgeTextColor = const Color(0xFFD68A59); 
+      badgeText = "PENDING";
+      infoText = "Menunggu konfirmasi ketersediaan dari cabang.";
+      infoColor = const Color(0xFFB57C4A);
+      
+      showViewDetail = true;
+      showCancelButton = !isExpired;
+    } else if (statusRaw == "verified" || statusRaw == "open") {
       badgeBgColor = Colors.green.shade50;
       badgeTextColor = Colors.green.shade700;
-      badgeText = "CONFIRMED";
-      infoText = "Your booking is confirmed";
+      badgeText = "VERIFIED";
+      infoText = "Pembayaran valid! Jadwal Anda sudah terkonfirmasi.";
       infoColor = Colors.green.shade700;
-    } else if (statusRaw == "deleted" || statusRaw == "delete") {
+      
+      showViewDetail = true;
+    } else if (statusRaw == "cancelled" || statusRaw == "deleted" || statusRaw == "delete") {
       badgeBgColor = Colors.red.shade50;
       badgeTextColor = Colors.red.shade700;
       badgeText = "CANCELLED";
-      infoText = "Booking has been expired / cancelled";
+      infoText = "Booking telah dibatalkan. (Geser untuk hapus)";
       infoColor = Colors.red.shade700;
+    } else {
+      badgeBgColor = Colors.grey.shade300;
+      badgeTextColor = Colors.grey.shade700;
+      badgeText = statusRaw.toUpperCase();
+      infoText = "Status transaksi Anda.";
+      infoColor = Colors.grey.shade700;
     }
 
-    // Logic Countdown
     if (showCountdown) {
       String m = timeLeft.inMinutes.remainder(60).toString().padLeft(2, "0");
       String s = timeLeft.inSeconds.remainder(60).toString().padLeft(2, "0");
       infoText += " ($m:$s)";
     }
-    if (isExpired && statusRaw == "acc") {
+    
+    if (isExpired && (statusRaw == "waiting payment" || statusRaw == "acc")) {
       badgeBgColor = Colors.red.shade50;
       badgeTextColor = Colors.red.shade700;
       badgeText = "EXPIRED";
-      infoText = "Payment time has expired";
+      infoText = "Waktu pembayaran telah habis.";
       infoColor = Colors.red.shade700;
+      
+      isUploadPayment = false;
+      showViewDetail = false;
+      showCancelButton = false;
     }
 
-    // Logic Button Clickable
-    final bool showViewDetail = (statusRaw == "acc" || statusRaw == "booking");
-    final bool showCancelButton = (statusRaw == "booking" && !isExpired);
-
-    return Container(
+    // BASE CARD WIDGET
+    final cardContent = Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -374,24 +460,22 @@ $noTelp
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Baris 1: ID Transaksi & Tanggal
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // BRAY: INI DIA FIX-NYA! Pake Expanded & Flexible biar teks ga bablas
               Expanded(
                 child: Row(
                   children: [
                     Flexible(
                       child: Text(
-                        'TRANSACTION : ${trx['id_transaksi']}', // Dummy prefix TRX26 biar mirip mockup
+                        'TRANSACTION : $trxId', 
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w900,
                           color: Colors.black87,
                         ),
                         maxLines: 1,
-                        overflow: TextOverflow.ellipsis, // Kalo mentok jadi titik-titik
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -412,7 +496,6 @@ $noTelp
           ),
           const SizedBox(height: 16),
 
-          // Baris 2: Jam & Terapis
           Row(
             children: [
               Icon(Icons.access_time, size: 18, color: Colors.grey.shade700),
@@ -436,7 +519,6 @@ $noTelp
           ),
           const SizedBox(height: 16),
 
-          // Baris 3: Badge Status
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
@@ -469,7 +551,6 @@ $noTelp
           ),
           const SizedBox(height: 8),
 
-          // Baris 4: Info Status
           Text(
             infoText,
             style: TextStyle(
@@ -480,7 +561,6 @@ $noTelp
           ),
           const SizedBox(height: 16),
 
-          // Baris 5: Nama Treatment & Customer ID
           Text(
             trx['deskripsi']?.toString().isNotEmpty == true ? trx['deskripsi'] : 'Detail Treatment',
             style: const TextStyle(
@@ -502,7 +582,6 @@ $noTelp
           
           const SizedBox(height: 20),
 
-          // Baris 6: Tombol Aksi (Cancel & View Detail)
           if (showCancelButton || showViewDetail)
             Row(
               children: [
@@ -519,7 +598,7 @@ $noTelp
                       ),
                       onPressed: () => _cancelBooking(trx),
                       child: Text(
-                        'Cancel Booking', // Diubah jadi Cancel Booking sesuai instruksi
+                        'Cancel Booking', 
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
@@ -543,19 +622,27 @@ $noTelp
                           borderRadius: BorderRadius.circular(100),
                         ),
                       ),
-                      onPressed: () {
-                        if (statusRaw == "acc") {
-                          Navigator.pushNamed(
+                      onPressed: () async {
+                        if (isUploadPayment) {
+                          final result = await Navigator.pushNamed(
                             context,
                             '/UploadPaymen',
-                            arguments: {'idTransaksi': trx['id_transaksi']},
+                            arguments: {'idTransaksi': trxId},
                           );
-                        } else if (statusRaw == "booking") {
+                          
+                          if (result == true) {
+                            setState(() {
+                              _pendingVerification.add(trxId);
+                            });
+                          }
+                          _checkLoginAndFetch();
+                          
+                        } else if (statusRaw == "booking" || statusRaw == "pending") {
                           _showBookingInfoDialog();
                         }
                       },
                       child: Text(
-                        statusRaw == 'acc' ? 'Upload Payment' : 'View Detail',
+                        isUploadPayment ? 'Upload Payment' : 'View Detail',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
@@ -568,6 +655,49 @@ $noTelp
         ],
       ),
     );
+
+    // =========================================================
+    // BRAY: INI FITUR SWIPE TO DELETE BUAT STATUS CANCELLED
+    // =========================================================
+    if (statusRaw == "cancelled" || statusRaw == "deleted" || statusRaw == "delete") {
+      return Dismissible(
+        key: Key(trxId), // Wajib unik tiap card
+        direction: DismissDirection.endToStart, // Geser dari kanan ke kiri
+        background: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.red.shade400,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 24),
+          child: const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.delete_sweep_rounded, color: Colors.white, size: 32),
+              SizedBox(height: 4),
+              Text("Hapus", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+            ],
+          ),
+        ),
+        onDismissed: (direction) {
+          // 1. Hapus dari UI (Optimistic delete biar ga loading)
+          setState(() {
+            _listTransaksi.removeWhere((item) => item['id_transaksi'].toString() == trxId);
+          });
+          // 2. Tembak API buat hapus di database
+          _hideHistory(trxId);
+          // 3. Kasih notifikasi ke user
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Riwayat booking berhasil dihapus')),
+          );
+        },
+        child: cardContent,
+      );
+    }
+
+    // Kalau bukan cancelled, tampilkan card biasa aja
+    return cardContent;
   }
 
   @override
@@ -617,7 +747,7 @@ $noTelp
     return Scaffold(
       backgroundColor: _bgColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFEAD8C0), // Warna solid krim
+        backgroundColor: const Color(0xFFEAD8C0), 
         elevation: 2,
         shadowColor: Colors.black26,
         centerTitle: true,
@@ -629,7 +759,6 @@ $noTelp
       ),
       body: Stack(
         children: [
-          // Background Tipis
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(

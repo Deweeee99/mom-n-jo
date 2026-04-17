@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -22,12 +23,30 @@ class _SplashScreenState extends State<SplashScreen> {
       }
     });
 
-    // Otomatis pindah ke halaman Login setelah 3 detik
-    Future.delayed(const Duration(seconds: 5), () {
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
-      }
-    });
+    // Panggil fungsi buat nunggu 5 detik terus ngecek login
+    _navigateNext();
+  }
+
+  // ---> BRAY: Ini fungsi logika barunya <---
+  Future<void> _navigateNext() async {
+    // Tunggu 5 detik sesuai durasi splash screen lu sebelumnya
+    await Future.delayed(const Duration(seconds: 5));
+    
+    if (!mounted) return;
+
+    // Cek status login di memori lokal
+    final prefs = await SharedPreferences.getInstance();
+    final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+    if (!mounted) return;
+
+    if (isLoggedIn) {
+      // Kalo udah login, lempar ke halaman pilih profil!
+      Navigator.pushReplacementNamed(context, '/profile_selection');
+    } else {
+      // Kalo belom login, biarin aja masuk ke Home sebagai Guest
+      Navigator.pushReplacementNamed(context, '/home');
+    }
   }
 
   @override
@@ -41,7 +60,7 @@ class _SplashScreenState extends State<SplashScreen> {
             height: double.infinity,
             decoration: const BoxDecoration(
               image: DecorationImage(
-                // Pastikan nama filenya bg_landing.jpg sesuai yang Tuan punya
+                // Pastikan nama filenya bg_landing.png sesuai yang Tuan punya
                 image: AssetImage('assets/images/bg_landing.png'),
                 fit: BoxFit.cover,
               ),

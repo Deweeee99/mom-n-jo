@@ -57,7 +57,8 @@ class _LoginScreenState extends State<LoginScreen> {
             await prefs.setString('email', data['email'] ?? '');
           }
 
-          Navigator.pushReplacementNamed(context, '/home');
+          // ---> BRAY: UBAH BARIS INI BIAR LARI KE PROFILE SELECTION DULU <---
+          Navigator.pushReplacementNamed(context, '/profile_selection');
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(responseData['message'] ?? 'Login gagal')),

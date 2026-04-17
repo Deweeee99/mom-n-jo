@@ -143,7 +143,14 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                                     ),
                                     child: Row(
                                       children: [
-                                        Icon(Icons.spa, color: primaryColor, size: 24),
+                                        // ---> BRAY: Ini Iconnya Udah Diganti Pake Aset Lu <---
+                                        Image.asset(
+                                          'assets/icon.png', 
+                                          width: 24, 
+                                          height: 24,
+                                          fit: BoxFit.contain,
+                                          errorBuilder: (context, error, stackTrace) => Icon(Icons.spa, color: primaryColor, size: 24),
+                                        ),
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: Text(
